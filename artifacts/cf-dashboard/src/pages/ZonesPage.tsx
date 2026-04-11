@@ -61,7 +61,7 @@ export default function ZonesPage() {
 
   const togglePause = async (zone: Zone) => {
     setActionLoading(zone.id);
-    const res = await api.patch(`/zones/${zone.id}/settings/paused`, { value: !zone.paused });
+    const res = await api.patch(`/zones/${zone.id}/settings/paused`, { value: !zone.paused ? 1 : 0 });
     if (res.ok) {
       setZones((prev) => prev.map((z) => z.id === zone.id ? { ...z, paused: !zone.paused } : z));
       toast({ title: zone.paused ? "Zone diaktifkan" : "Zone dijeda" });
@@ -88,7 +88,7 @@ export default function ZonesPage() {
   const createZone = async () => {
     if (!newZoneName.trim()) return;
     setCreating(true);
-    const res = await api.post("/zones", { name: newZoneName.trim() });
+    const res = await api.post("/zones", { name: newZoneName.trim(), jump_start: true });
     if (res.ok) {
       toast({ title: `Domain ${newZoneName} ditambahkan` });
       setCreateOpen(false);
@@ -209,7 +209,7 @@ export default function ZonesPage() {
       </Card>
 
       <Dialog open={createOpen} onOpenChange={(o) => !o && setCreateOpen(false)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-md w-[95vw]">
+        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-md w-[95vw] overflow-visible">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PlusCircleIcon className="w-4 h-4 text-orange-400" />
@@ -230,8 +230,8 @@ export default function ZonesPage() {
               <p className="text-xs text-gray-400">Catatan</p>
               <p className="text-xs text-gray-500">Fitur ini menambah domain ke akun Cloudflare kamu, bukan hanya ke project tertentu.</p>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-gray-400">Batal</Button>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="ghost" onClick={() => setCreateOpen(false)} className="text-gray-400">Batal</Button>
               <Button onClick={createZone} disabled={creating || !newDomain.trim()} className="bg-orange-500 hover:bg-orange-600">
                 {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Tambah
