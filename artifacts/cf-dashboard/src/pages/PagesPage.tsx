@@ -86,12 +86,11 @@ const STAGE_LABEL: Record<string, string> = {
 
 export default function PagesPage() {
   const { toast } = useToast();
-  const [accountId, setAccountId] = useState(CLOUDFLARE_ACCOUNT_ID);
+  const [accountId] = useState(CLOUDFLARE_ACCOUNT_ID);
   const [projects, setProjects] = useState<PagesProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
 
-  // Domain management
   const [domainProject, setDomainProject] = useState<PagesProject | null>(null);
   const [domains, setDomains] = useState<PagesDomain[]>([]);
   const [domainsLoading, setDomainsLoading] = useState(false);
@@ -99,17 +98,14 @@ export default function PagesPage() {
   const [addingDomain, setAddingDomain] = useState(false);
   const [deleteDomain, setDeleteDomain] = useState<PagesDomain | null>(null);
 
-  // Deployments dialog
   const [deployProject, setDeployProject] = useState<PagesProject | null>(null);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [deploymentsLoading, setDeploymentsLoading] = useState(false);
 
-  // Delete project
   const [deleteProject, setDeleteProject] = useState<PagesProject | null>(null);
   const [deletingProject, setDeletingProject] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
-  // Create project
   const [createOpen, setCreateOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
@@ -145,7 +141,6 @@ export default function PagesPage() {
 
   useEffect(() => { fetchProjects(); }, []);
 
-  // ── Domain Management ──────────────────────────────────────────
   const openDomains = async (project: PagesProject) => {
     setDomainProject(project);
     setDomainsLoading(true);
@@ -182,7 +177,6 @@ export default function PagesPage() {
     setDeleteDomain(null);
   };
 
-  // ── Deployments ────────────────────────────────────────────────
   const openDeployments = async (project: PagesProject) => {
     setDeployProject(project);
     setDeploymentsLoading(true);
@@ -192,7 +186,6 @@ export default function PagesPage() {
     setDeploymentsLoading(false);
   };
 
-  // ── Delete Project ─────────────────────────────────────────────
   const confirmDeleteProject = async () => {
     if (!deleteProject || deleteConfirmName !== deleteProject.name) return;
     setDeletingProject(true);
@@ -207,7 +200,6 @@ export default function PagesPage() {
     setDeletingProject(false);
   };
 
-  // ── Create Project ─────────────────────────────────────────────
   const openCreate = async () => {
     setCreateStep(1);
     setSelectedRepo(null);
@@ -283,7 +275,6 @@ export default function PagesPage() {
       setCreating(false);
       return;
     }
-    // Trigger first deployment
     const deployRes = await api.post(`/accounts/${accountId}/pages/projects/${formProjectName.trim()}/deployments`, {});
     if (deployRes.ok) {
       const dep = (deployRes.data as { result: Deployment }).result;
@@ -377,34 +368,34 @@ export default function PagesPage() {
                 const owner = project.source?.config?.owner;
                 return (
                   <div key={project.id} className="p-3 sm:p-4 hover:bg-gray-800/30 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
                         <LayoutTemplateIcon className="w-4 h-4 text-orange-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-white">{project.name}</p>
+                          <p className="text-sm font-semibold text-white truncate max-w-[180px] sm:max-w-none">{project.name}</p>
                           {latestStage && <DeployStatusBadge status={latestStage.status} />}
                         </div>
                         {prodUrl && (
                           <a href={prodUrl} target="_blank" rel="noopener noreferrer"
-                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 w-fit">
-                            <ExternalLinkIcon className="w-3 h-3" />
-                            {project.subdomain}.pages.dev
+                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 w-fit truncate max-w-[220px]">
+                            <ExternalLinkIcon className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{project.subdomain}.pages.dev</span>
                           </a>
                         )}
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
                           {repo && (
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
-                              <FolderGitIcon className="w-3 h-3" />{owner ? `${owner}/${repo}` : repo}
+                            <p className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
+                              <FolderGitIcon className="w-3 h-3 shrink-0" />{owner ? `${owner}/${repo}` : repo}
                             </p>
                           )}
                           {project.domains?.length > 0 && (
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <p className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-1">
                               <GlobeIcon className="w-3 h-3" />{project.domains.length} custom domain
                             </p>
                           )}
-                          <p className="text-xs text-gray-600 flex items-center gap-1">
+                          <p className="text-[11px] sm:text-xs text-gray-600 flex items-center gap-1">
                             <CalendarIcon className="w-3 h-3" />{formatDate(project.created_on)}
                           </p>
                         </div>
@@ -437,7 +428,6 @@ export default function PagesPage() {
         </CardContent>
       </Card>
 
-      {/* ── Create Project Dialog ── */}
       <Dialog open={createOpen} onOpenChange={(o) => !o && closeCreate()}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw] max-h-[90vh] overflow-auto">
           <DialogHeader>
@@ -447,15 +437,13 @@ export default function PagesPage() {
               <span className="ml-auto text-xs text-gray-500 font-normal">Step {createStep}/3</span>
             </DialogTitle>
           </DialogHeader>
-
-          {/* Step indicators */}
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs overflow-x-auto pb-1">
             {[
               { n: 1, label: "Pilih Repo" },
               { n: 2, label: "Build Config" },
               { n: 3, label: "Deploy" },
             ].map((s, i) => (
-              <div key={s.n} className="flex items-center gap-2">
+              <div key={s.n} className="flex items-center gap-2 shrink-0">
                 <div className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                   createStep > s.n ? "bg-green-500 text-white" :
@@ -469,7 +457,6 @@ export default function PagesPage() {
             ))}
           </div>
 
-          {/* Step 1: Pilih Repo */}
           {createStep === 1 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -479,7 +466,6 @@ export default function PagesPage() {
                   {useManual ? "Pilih dari daftar" : "Input manual"}
                 </Button>
               </div>
-
               {useManual ? (
                 <div className="space-y-1.5">
                   <Label className="text-gray-400 text-xs">Owner/Repo (contoh: username/my-project)</Label>
@@ -503,7 +489,7 @@ export default function PagesPage() {
                     onChange={(e) => setRepoSearch(e.target.value)}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                   />
-                  <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                     {filteredRepos.map((r) => (
                       <button
                         key={r.id}
@@ -515,12 +501,12 @@ export default function PagesPage() {
                             : "bg-gray-800/50 border-gray-700/50 text-gray-300 hover:bg-gray-800 hover:text-white"
                         )}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <FolderGitIcon className="w-4 h-4 shrink-0 text-gray-400" />
                           <span className="text-sm font-medium truncate">{r.full_name}</span>
                           {r.private && <Badge className="bg-gray-700 text-gray-400 text-xs shrink-0">Private</Badge>}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 ml-6">Branch: {r.default_branch}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 ml-6 truncate">Branch: {r.default_branch}</p>
                       </button>
                     ))}
                     {filteredRepos.length === 0 && (
@@ -542,8 +528,6 @@ export default function PagesPage() {
                   />
                 </div>
               )}
-
-              {/* Branch input */}
               {(selectedRepo || useManual) && (
                 <div className="space-y-1.5">
                   <Label className="text-gray-400 text-xs flex items-center gap-1"><GitBranchIcon className="w-3 h-3" /> Production Branch</Label>
@@ -555,11 +539,10 @@ export default function PagesPage() {
                   />
                 </div>
               )}
-
               <div className="flex justify-end">
                 <Button
                   onClick={() => setCreateStep(2)}
-                  disabled={!canProceedStep1}
+                  disabled={!manualRepo && !selectedRepo}
                   className="bg-orange-500 hover:bg-orange-600 gap-1.5"
                 >
                   Lanjut <ChevronRightIcon className="w-4 h-4" />
@@ -568,20 +551,17 @@ export default function PagesPage() {
             </div>
           )}
 
-          {/* Step 2: Build Config */}
           {createStep === 2 && (
             <div className="space-y-4">
-              {/* Repo info */}
               <div className="flex items-center gap-2 p-3 bg-gray-800/50 rounded-lg">
                 <FolderGitIcon className="w-4 h-4 text-orange-400 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm text-white font-medium">
+                  <p className="text-sm text-white font-medium truncate">
                     {useManual ? manualRepo : selectedRepo?.full_name}
                   </p>
                   <p className="text-xs text-gray-500">Branch: {formBranch || "main"}</p>
                 </div>
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-gray-300 text-xs">Nama Project <span className="text-red-400">*</span></Label>
                 <Input
@@ -590,9 +570,8 @@ export default function PagesPage() {
                   onChange={(e) => setFormProjectName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
                   className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono"
                 />
-                <p className="text-xs text-gray-600">Nama ini akan jadi subdomain: {formProjectName || "nama-project"}.pages.dev</p>
+                <p className="text-xs text-gray-600 break-words">Nama ini akan jadi subdomain: {formProjectName || "nama-project"}.pages.dev</p>
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-gray-300 text-xs flex items-center gap-1"><TerminalIcon className="w-3 h-3" /> Build Command</Label>
                 <Input
@@ -602,7 +581,6 @@ export default function PagesPage() {
                   className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm"
                 />
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-gray-300 text-xs flex items-center gap-1"><FolderIcon className="w-3 h-3" /> Output Directory</Label>
                 <Input
@@ -612,7 +590,6 @@ export default function PagesPage() {
                   className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm"
                 />
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-gray-300 text-xs flex items-center gap-1"><FolderIcon className="w-3 h-3" /> Root Directory <span className="text-gray-600 font-normal">(opsional)</span></Label>
                 <Input
@@ -622,9 +599,8 @@ export default function PagesPage() {
                   className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm"
                 />
               </div>
-
-              <div className="flex justify-between">
-                <Button variant="ghost" onClick={() => setCreateStep(1)} className="text-gray-400 gap-1.5">
+              <div className="flex justify-between gap-2">
+                <Button variant="ghost" onClick={() => setCreateStep(1)} className="text-gray-400 gap-1.5 px-2 sm:px-3">
                   <ChevronLeftIcon className="w-4 h-4" /> Kembali
                 </Button>
                 <Button
@@ -639,28 +615,25 @@ export default function PagesPage() {
             </div>
           )}
 
-          {/* Step 3: Deployment Progress */}
           {createStep === 3 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                 <CheckCircleIcon className="w-5 h-5 text-green-400 shrink-0" />
-                <div>
-                  <p className="text-sm text-white font-medium">Project "{formProjectName}" berhasil dibuat!</p>
+                <div className="min-w-0">
+                  <p className="text-sm text-white font-medium break-words">Project "{formProjectName}" berhasil dibuat!</p>
                   <a href={`https://${formProjectName}.pages.dev`} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5">
-                    <ExternalLinkIcon className="w-3 h-3" />{formProjectName}.pages.dev
+                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 truncate">
+                    <ExternalLinkIcon className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{formProjectName}.pages.dev</span>
                   </a>
                 </div>
               </div>
-
-              {/* Deployment stages */}
               {createdDeployment ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-300 font-medium">Status Deployment</p>
                     {deployPollLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
                   </div>
-
                   <div className="space-y-1.5">
                     {(createdDeployment.stages ?? STAGE_ORDER.map(n => ({ name: n, status: "pending" }))).map((stage) => {
                       const isActive = stage.status === "active" || stage.status === "running";
@@ -684,7 +657,6 @@ export default function PagesPage() {
                       );
                     })}
                   </div>
-
                   {createdDeployment.url && (
                     <a href={createdDeployment.url} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 text-sm">
@@ -696,7 +668,6 @@ export default function PagesPage() {
               ) : (
                 <p className="text-gray-400 text-sm">Deployment akan segera dimulai...</p>
               )}
-
               <div className="flex justify-end">
                 <Button onClick={closeCreate} className="bg-gray-700 hover:bg-gray-600">
                   Tutup
@@ -707,7 +678,6 @@ export default function PagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Custom Domains Dialog ── */}
       <Dialog open={!!domainProject} onOpenChange={(o) => !o && setDomainProject(null)}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw]">
           <DialogHeader>
@@ -716,7 +686,6 @@ export default function PagesPage() {
               Custom Domains — {domainProject?.name}
             </DialogTitle>
           </DialogHeader>
-
           <div className="flex gap-2">
             <Input
               placeholder="contoh.com atau sub.contoh.com"
@@ -729,8 +698,7 @@ export default function PagesPage() {
               {addingDomain ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusIcon className="w-4 h-4" />}
             </Button>
           </div>
-
-          <div className="space-y-2 max-h-72 overflow-y-auto">
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {domainsLoading ? (
               <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
             ) : domains.length === 0 ? (
@@ -753,9 +721,8 @@ export default function PagesPage() {
               ))
             )}
           </div>
-
           {domainProject?.subdomain && (
-            <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg overflow-hidden">
               <ExternalLinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
               <p className="text-xs text-blue-400 font-mono truncate">{domainProject.subdomain}.pages.dev</p>
               <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs shrink-0">Default</Badge>
@@ -764,7 +731,6 @@ export default function PagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Deployments Dialog ── */}
       <Dialog open={!!deployProject} onOpenChange={(o) => !o && setDeployProject(null)}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw]">
           <DialogHeader>
@@ -773,7 +739,7 @@ export default function PagesPage() {
               Deployments — {deployProject?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
             {deploymentsLoading ? (
               <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
             ) : deployments.length === 0 ? (
@@ -816,7 +782,6 @@ export default function PagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete domain confirm ── */}
       <AlertDialog open={!!deleteDomain} onOpenChange={(o) => !o && setDeleteDomain(null)}>
         <AlertDialogContent className="bg-gray-900 border-gray-800 text-white w-[95vw] max-w-md">
           <AlertDialogHeader>
@@ -832,7 +797,6 @@ export default function PagesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Delete project confirm ── */}
       <Dialog open={!!deleteProject} onOpenChange={(o) => { if (!o) setDeleteProject(null); }}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white w-[95vw] max-w-md">
           <DialogHeader>

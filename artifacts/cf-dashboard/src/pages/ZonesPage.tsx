@@ -28,9 +28,9 @@ interface Zone {
 }
 
 function ZoneStatusBadge({ status, paused }: { status: string; paused: boolean }) {
-  if (paused) return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs shrink-0"><PauseCircleIcon className="w-3 h-3 mr-1" />Paused</Badge>;
-  if (status === "active") return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs shrink-0"><CheckCircleIcon className="w-3 h-3 mr-1" />Active</Badge>;
-  return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs shrink-0"><AlertCircleIcon className="w-3 h-3 mr-1" />{status}</Badge>;
+  if (paused) return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[11px] sm:text-xs shrink-0"><PauseCircleIcon className="w-3 h-3 mr-1" />Paused</Badge>;
+  if (status === "active") return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[11px] sm:text-xs shrink-0"><CheckCircleIcon className="w-3 h-3 mr-1" />Active</Badge>;
+  return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[11px] sm:text-xs shrink-0"><AlertCircleIcon className="w-3 h-3 mr-1" />{status}</Badge>;
 }
 
 export default function ZonesPage() {
@@ -84,11 +84,11 @@ export default function ZonesPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white">Domains / Zones</h1>
-          <p className="text-gray-400 text-sm mt-0.5">{zones.length} domain terdaftar</p>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{zones.length} domain terdaftar</p>
         </div>
-        <Button size="sm" variant="outline" onClick={fetchZones} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2 shrink-0">
+        <Button size="sm" variant="outline" onClick={fetchZones} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2 shrink-0 h-8 px-2 sm:px-3">
           <RefreshCwIcon className="w-4 h-4" />
           <span className="hidden sm:inline">Refresh</span>
         </Button>
@@ -119,25 +119,22 @@ export default function ZonesPage() {
             <div className="divide-y divide-gray-800">
               {filtered.map((zone) => (
                 <div key={zone.id} className="p-3 sm:p-4 hover:bg-gray-800/30 transition-colors">
-                  <div className="flex items-start gap-3">
-                    {/* Icon */}
+                  <div className="flex items-start gap-2 sm:gap-3">
                     <div className={cn(
-                      "w-9 h-9 rounded-lg shrink-0 flex items-center justify-center mt-0.5",
+                      "w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0 flex items-center justify-center mt-0.5",
                       zone.status === "active" && !zone.paused ? "bg-green-500/10" : "bg-gray-800"
                     )}>
                       <GlobeIcon className={cn("w-4 h-4", zone.status === "active" && !zone.paused ? "text-green-400" : "text-gray-500")} />
                     </div>
 
-                    {/* Name + info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-white">{zone.name}</p>
+                        <p className="text-sm font-semibold text-white truncate max-w-[180px] sm:max-w-none">{zone.name}</p>
                         <ZoneStatusBadge status={zone.status} paused={zone.paused} />
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{zone.plan?.name ?? "Free"} · {formatDate(zone.created_on)}</p>
+                      <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">{zone.plan?.name ?? "Free"} · {formatDate(zone.created_on)}</p>
                     </div>
 
-                    {/* Actions — always visible on mobile */}
                     <div className="flex items-center gap-1 shrink-0">
                       <Button
                         size="icon"
@@ -186,7 +183,6 @@ export default function ZonesPage() {
         </CardContent>
       </Card>
 
-      {/* Detail dialog */}
       <Dialog open={!!detailZone} onOpenChange={(o) => !o && setDetailZone(null)}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw]">
           <DialogHeader>
@@ -204,9 +200,9 @@ export default function ZonesPage() {
                   { label: "Dibuat", value: formatDate(detailZone.created_on) },
                   { label: "Diperbarui", value: formatDate(detailZone.modified_on) },
                 ].map((item) => (
-                  <div key={item.label} className="bg-gray-800/50 p-3 rounded-lg">
+                  <div key={item.label} className="bg-gray-800/50 p-3 rounded-lg min-w-0">
                     <p className="text-xs text-gray-400 mb-1">{item.label}</p>
-                    <div className="text-sm text-white">{item.value}</div>
+                    <div className="text-sm text-white break-words">{item.value}</div>
                   </div>
                 ))}
               </div>
@@ -228,7 +224,6 @@ export default function ZonesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirm */}
       <AlertDialog open={!!deleteZone} onOpenChange={(o) => !o && setDeleteZone(null)}>
         <AlertDialogContent className="bg-gray-900 border-gray-800 text-white w-[95vw] max-w-md">
           <AlertDialogHeader>
