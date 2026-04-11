@@ -1,0 +1,18 @@
+failed to load config from /opt/buildhome/repo/artifacts/cf-dashboard/vite.config.ts
+03:23:54.481	error during build:
+03:23:54.481	Error: PORT environment variable is required but was not provided.
+03:23:54.481	    at file:///opt/buildhome/repo/artifacts/cf-dashboard/node_modules/.vite-temp/vite.config.ts.timestamp-1775939034336-ab6ee16547552.mjs:10:9
+03:23:54.481	    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+03:23:54.481	    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+03:23:54.481	    at async loadConfigFromBundledFile (file:///opt/buildhome/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35909:12)
+03:23:54.481	    at async bundleAndLoadConfigFile (file:///opt/buildhome/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35797:17)
+03:23:54.481	    at async loadConfigFromFile (file:///opt/buildhome/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35764:42)
+03:23:54.482	    at async resolveConfig (file:///opt/buildhome/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35413:22)
+03:23:54.482	    at async createBuilder (file:///opt/buildhome/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:33875:19)
+03:23:54.482	    at async CAC.<anonymous> (file:///opt/buildhome/repo/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/cli.js:629:10)
+03:23:54.513	/opt/buildhome/repo/artifacts/cf-dashboard:
+03:23:54.514	 ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/cf-dashboard@0.0.0 build: `vite build --config vite.config.ts`
+03:23:54.514	Exit status 1
+03:23:54.545	Failed: Error while executing user command. Exited with error code: 1
+03:23:54.550	Failed: build command exited with code: 1
+03:23:55.311	Failed: error occurred while running build command
