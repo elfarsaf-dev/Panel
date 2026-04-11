@@ -320,19 +320,19 @@ export default function PagesPage() {
   const canProceedStep2 = !!formProjectName.trim();
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Pages Projects</h1>
-          <p className="text-gray-400 text-sm mt-0.5">{projects.length} project</p>
+          <h1 className="text-lg sm:text-2xl font-bold text-white">Pages Projects</h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5">{projects.length} project</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => fetchProjects()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2 shrink-0">
-            <RefreshCwIcon className="w-4 h-4" />
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => fetchProjects()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 shrink-0 h-8 px-2 text-xs">
+            <RefreshCwIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button size="sm" onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 gap-1.5 shrink-0">
-            <PlusIcon className="w-4 h-4" />
+          <Button size="sm" onClick={openCreate} className="bg-orange-500 hover:bg-orange-600 gap-1.5 shrink-0 h-8 px-2 text-xs">
+            <PlusIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Buat Project</span>
             <span className="sm:hidden">Buat</span>
           </Button>
@@ -367,56 +367,56 @@ export default function PagesPage() {
                 const repo = project.source?.config?.repo_name;
                 const owner = project.source?.config?.owner;
                 return (
-                  <div key={project.id} className="p-3 sm:p-4 hover:bg-gray-800/30 transition-colors">
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <LayoutTemplateIcon className="w-4 h-4 text-orange-400" />
+                  <div key={project.id} className="p-2.5 sm:p-4 hover:bg-gray-800/30 transition-colors">
+                    <div className="flex items-start gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <LayoutTemplateIcon className="w-3.5 h-3.5 text-orange-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-white truncate max-w-[180px] sm:max-w-none">{project.name}</p>
+                          <p className="text-[13px] sm:text-sm font-semibold text-white truncate max-w-[160px] sm:max-w-none">{project.name}</p>
                           {latestStage && <DeployStatusBadge status={latestStage.status} />}
                         </div>
                         {prodUrl && (
                           <a href={prodUrl} target="_blank" rel="noopener noreferrer"
-                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 w-fit truncate max-w-[220px]">
-                            <ExternalLinkIcon className="w-3 h-3 shrink-0" />
+                            className="text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 w-fit truncate max-w-[180px] sm:max-w-[220px]">
+                            <ExternalLinkIcon className="w-2.5 h-2.5 shrink-0" />
                             <span className="truncate">{project.subdomain}.pages.dev</span>
                           </a>
                         )}
-                        <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {repo && (
-                            <p className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
-                              <FolderGitIcon className="w-3 h-3 shrink-0" />{owner ? `${owner}/${repo}` : repo}
+                            <p className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1 truncate max-w-[150px] sm:max-w-none">
+                              <FolderGitIcon className="w-2.5 h-2.5 shrink-0" />{owner ? `${owner}/${repo}` : repo}
                             </p>
                           )}
                           {project.domains?.length > 0 && (
-                            <p className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-1">
-                              <GlobeIcon className="w-3 h-3" />{project.domains.length} custom domain
+                            <p className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1">
+                              <GlobeIcon className="w-2.5 h-2.5" />{project.domains.length} custom domain
                             </p>
                           )}
-                          <p className="text-[11px] sm:text-xs text-gray-600 flex items-center gap-1">
-                            <CalendarIcon className="w-3 h-3" />{formatDate(project.created_on)}
+                          <p className="text-[10px] sm:text-xs text-gray-600 flex items-center gap-1">
+                            <CalendarIcon className="w-2.5 h-2.5" />{formatDate(project.created_on)}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button size="sm" variant="ghost"
-                          className="h-8 px-2 text-xs text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 gap-1"
+                          className="h-7 px-1.5 text-[11px] text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 gap-1"
                           onClick={() => openDeployments(project)}>
-                          <RocketIcon className="w-3.5 h-3.5" />
+                          <RocketIcon className="w-3 h-3" />
                           <span className="hidden sm:inline">Deploy</span>
                         </Button>
                         <Button size="sm" variant="ghost"
-                          className="h-8 px-2 text-xs text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 gap-1"
+                          className="h-7 px-1.5 text-[11px] text-gray-400 hover:text-orange-400 hover:bg-orange-500/10 gap-1"
                           onClick={() => openDomains(project)}>
-                          <GlobeIcon className="w-3.5 h-3.5" />
+                          <GlobeIcon className="w-3 h-3" />
                           <span className="hidden sm:inline">Domain</span>
                         </Button>
                         <Button size="sm" variant="ghost"
-                          className="h-8 w-8 p-0 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
                           onClick={() => { setDeleteProject(project); setDeleteConfirmName(""); }}>
-                          <Trash2Icon className="w-3.5 h-3.5" />
+                          <Trash2Icon className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
@@ -431,13 +431,13 @@ export default function PagesPage() {
       <Dialog open={createOpen} onOpenChange={(o) => !o && closeCreate()}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw] max-h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <LayoutTemplateIcon className="w-4 h-4 text-orange-400" />
+            <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <LayoutTemplateIcon className="w-3.5 h-3.5 text-orange-400" />
               Buat Pages Project
-              <span className="ml-auto text-xs text-gray-500 font-normal">Step {createStep}/3</span>
+              <span className="ml-auto text-[11px] sm:text-xs text-gray-500 font-normal">Step {createStep}/3</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex items-center gap-2 text-xs overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs overflow-x-auto pb-1">
             {[
               { n: 1, label: "Pilih Repo" },
               { n: 2, label: "Build Config" },
@@ -445,41 +445,41 @@ export default function PagesPage() {
             ].map((s, i) => (
               <div key={s.n} className="flex items-center gap-2 shrink-0">
                 <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                  "w-5.5 h-5.5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0",
                   createStep > s.n ? "bg-green-500 text-white" :
                   createStep === s.n ? "bg-orange-500 text-white" : "bg-gray-700 text-gray-400"
                 )}>
                   {createStep > s.n ? <CheckCircleIcon className="w-3.5 h-3.5" /> : s.n}
                 </div>
                 <span className={createStep === s.n ? "text-white" : "text-gray-500"}>{s.label}</span>
-                {i < 2 && <ChevronRightIcon className="w-3 h-3 text-gray-600" />}
+                {i < 2 && <ChevronRightIcon className="w-2.5 h-2.5 text-gray-600" />}
               </div>
             ))}
           </div>
 
           {createStep === 1 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-300 font-medium">Pilih GitHub Repository</p>
-                <Button size="sm" variant="ghost" className="text-xs text-gray-500 hover:text-white h-7 px-2"
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs sm:text-sm text-gray-300 font-medium">Pilih GitHub Repository</p>
+                <Button size="sm" variant="ghost" className="text-[11px] sm:text-xs text-gray-500 hover:text-white h-7 px-2"
                   onClick={() => setUseManual(!useManual)}>
                   {useManual ? "Pilih dari daftar" : "Input manual"}
                 </Button>
               </div>
               {useManual ? (
                 <div className="space-y-1.5">
-                  <Label className="text-gray-400 text-xs">Owner/Repo (contoh: username/my-project)</Label>
+                  <Label className="text-gray-400 text-[11px] sm:text-xs">Owner/Repo (contoh: username/my-project)</Label>
                   <Input
                     placeholder="username/nama-repo"
                     value={manualRepo}
                     onChange={(e) => setManualRepo(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm h-9"
                   />
                 </div>
               ) : reposLoading ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
-                  <span className="text-gray-400 text-sm">Memuat repo GitHub...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400 mr-2" />
+                  <span className="text-gray-400 text-xs sm:text-sm">Memuat repo GitHub...</span>
                 </div>
               ) : githubRepos.length > 0 ? (
                 <div className="space-y-2">
@@ -487,7 +487,7 @@ export default function PagesPage() {
                     placeholder="Cari repo..."
                     value={repoSearch}
                     onChange={(e) => setRepoSearch(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm h-9"
                   />
                   <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                     {filteredRepos.map((r) => (
@@ -495,7 +495,7 @@ export default function PagesPage() {
                         key={r.id}
                         onClick={() => handleSelectRepo(r)}
                         className={cn(
-                          "w-full text-left p-3 rounded-lg border transition-colors",
+                          "w-full text-left p-2.5 rounded-lg border transition-colors",
                           selectedRepo?.id === r.id
                             ? "bg-orange-500/15 border-orange-500/40 text-white"
                             : "bg-gray-800/50 border-gray-700/50 text-gray-300 hover:bg-gray-800 hover:text-white"
@@ -503,39 +503,39 @@ export default function PagesPage() {
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <FolderGitIcon className="w-4 h-4 shrink-0 text-gray-400" />
-                          <span className="text-sm font-medium truncate">{r.full_name}</span>
-                          {r.private && <Badge className="bg-gray-700 text-gray-400 text-xs shrink-0">Private</Badge>}
+                          <span className="text-[13px] font-medium truncate">{r.full_name}</span>
+                          {r.private && <Badge className="bg-gray-700 text-gray-400 text-[11px] shrink-0">Private</Badge>}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 ml-6 truncate">Branch: {r.default_branch}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5 ml-6 truncate">Branch: {r.default_branch}</p>
                       </button>
                     ))}
                     {filteredRepos.length === 0 && (
-                      <p className="text-center text-gray-500 text-sm py-4">Tidak ada repo yang cocok</p>
+                      <p className="text-center text-gray-500 text-xs py-4">Tidak ada repo yang cocok</p>
                     )}
                   </div>
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <p className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2.5">
+                  <p className="text-[11px] text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2.5">
                     Tidak bisa memuat daftar repo. Masukkan repo secara manual.
                   </p>
-                  <Label className="text-gray-400 text-xs">Owner/Repo</Label>
+                  <Label className="text-gray-400 text-[11px] sm:text-xs">Owner/Repo</Label>
                   <Input
                     placeholder="username/nama-repo"
                     value={manualRepo}
                     onChange={(e) => setManualRepo(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm h-9"
                   />
                 </div>
               )}
               {(selectedRepo || useManual) && (
                 <div className="space-y-1.5">
-                  <Label className="text-gray-400 text-xs flex items-center gap-1"><GitBranchIcon className="w-3 h-3" /> Production Branch</Label>
+                  <Label className="text-gray-400 text-[11px] sm:text-xs flex items-center gap-1"><GitBranchIcon className="w-3 h-3" /> Production Branch</Label>
                   <Input
                     placeholder="main"
                     value={formBranch}
                     onChange={(e) => setFormBranch(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                    className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm h-9"
                   />
                 </div>
               )}
@@ -543,72 +543,72 @@ export default function PagesPage() {
                 <Button
                   onClick={() => setCreateStep(2)}
                   disabled={!manualRepo && !selectedRepo}
-                  className="bg-orange-500 hover:bg-orange-600 gap-1.5"
+                  className="bg-orange-500 hover:bg-orange-600 gap-1.5 h-8 px-3 text-xs"
                 >
-                  Lanjut <ChevronRightIcon className="w-4 h-4" />
+                  Lanjut <ChevronRightIcon className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
           )}
 
           {createStep === 2 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 bg-gray-800/50 rounded-lg">
-                <FolderGitIcon className="w-4 h-4 text-orange-400 shrink-0" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-2.5 bg-gray-800/50 rounded-lg">
+                <FolderGitIcon className="w-3.5 h-3.5 text-orange-400 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm text-white font-medium truncate">
+                  <p className="text-xs sm:text-sm text-white font-medium truncate">
                     {useManual ? manualRepo : selectedRepo?.full_name}
                   </p>
-                  <p className="text-xs text-gray-500">Branch: {formBranch || "main"}</p>
+                  <p className="text-[11px] sm:text-xs text-gray-500">Branch: {formBranch || "main"}</p>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-gray-300 text-xs">Nama Project <span className="text-red-400">*</span></Label>
+                <Label className="text-gray-300 text-[11px] sm:text-xs">Nama Project <span className="text-red-400">*</span></Label>
                 <Input
                   placeholder="my-website"
                   value={formProjectName}
                   onChange={(e) => setFormProjectName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono"
+                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm h-9"
                 />
-                <p className="text-xs text-gray-600 break-words">Nama ini akan jadi subdomain: {formProjectName || "nama-project"}.pages.dev</p>
+                <p className="text-[11px] text-gray-600 break-words">Nama ini akan jadi subdomain: {formProjectName || "nama-project"}.pages.dev</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-gray-300 text-xs flex items-center gap-1"><TerminalIcon className="w-3 h-3" /> Build Command</Label>
+                <Label className="text-gray-300 text-[11px] sm:text-xs flex items-center gap-1"><TerminalIcon className="w-3 h-3" /> Build Command</Label>
                 <Input
                   placeholder="npm run build"
                   value={formBuildCmd}
                   onChange={(e) => setFormBuildCmd(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm"
+                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm h-9"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-gray-300 text-xs flex items-center gap-1"><FolderIcon className="w-3 h-3" /> Output Directory</Label>
+                <Label className="text-gray-300 text-[11px] sm:text-xs flex items-center gap-1"><FolderIcon className="w-3 h-3" /> Output Directory</Label>
                 <Input
                   placeholder="dist"
                   value={formOutputDir}
                   onChange={(e) => setFormOutputDir(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm"
+                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm h-9"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-gray-300 text-xs flex items-center gap-1"><FolderIcon className="w-3 h-3" /> Root Directory <span className="text-gray-600 font-normal">(opsional)</span></Label>
+                <Label className="text-gray-300 text-[11px] sm:text-xs flex items-center gap-1"><FolderIcon className="w-3 h-3" /> Root Directory <span className="text-gray-600 font-normal">(opsional)</span></Label>
                 <Input
                   placeholder="/"
                   value={formRootDir}
                   onChange={(e) => setFormRootDir(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm"
+                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 font-mono text-sm h-9"
                 />
               </div>
               <div className="flex justify-between gap-2">
-                <Button variant="ghost" onClick={() => setCreateStep(1)} className="text-gray-400 gap-1.5 px-2 sm:px-3">
-                  <ChevronLeftIcon className="w-4 h-4" /> Kembali
+                <Button variant="ghost" onClick={() => setCreateStep(1)} className="text-gray-400 gap-1.5 px-2 sm:px-3 h-8 text-xs">
+                  <ChevronLeftIcon className="w-3.5 h-3.5" /> Kembali
                 </Button>
                 <Button
                   onClick={startCreateProject}
                   disabled={!canProceedStep2 || creating}
-                  className="bg-orange-500 hover:bg-orange-600 gap-1.5"
+                  className="bg-orange-500 hover:bg-orange-600 gap-1.5 h-8 px-3 text-xs"
                 >
-                  {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {creating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   {creating ? "Membuat..." : "Buat & Deploy"}
                 </Button>
               </div>
@@ -616,14 +616,14 @@ export default function PagesPage() {
           )}
 
           {createStep === 3 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <CheckCircleIcon className="w-5 h-5 text-green-400 shrink-0" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-2.5 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <CheckCircleIcon className="w-4 h-4 text-green-400 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm text-white font-medium break-words">Project "{formProjectName}" berhasil dibuat!</p>
+                  <p className="text-xs sm:text-sm text-white font-medium break-words">Project "{formProjectName}" berhasil dibuat!</p>
                   <a href={`https://${formProjectName}.pages.dev`} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 truncate">
-                    <ExternalLinkIcon className="w-3 h-3 shrink-0" />
+                    className="text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 truncate">
+                    <ExternalLinkIcon className="w-2.5 h-2.5 shrink-0" />
                     <span className="truncate">{formProjectName}.pages.dev</span>
                   </a>
                 </div>
@@ -631,8 +631,8 @@ export default function PagesPage() {
               {createdDeployment ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-300 font-medium">Status Deployment</p>
-                    {deployPollLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                    <p className="text-xs sm:text-sm text-gray-300 font-medium">Status Deployment</p>
+                    {deployPollLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />}
                   </div>
                   <div className="space-y-1.5">
                     {(createdDeployment.stages ?? STAGE_ORDER.map(n => ({ name: n, status: "pending" }))).map((stage) => {
@@ -641,16 +641,16 @@ export default function PagesPage() {
                       const isFailed = stage.status === "failure" || stage.status === "failed";
                       return (
                         <div key={stage.name} className={cn(
-                          "flex items-center gap-3 p-2.5 rounded-lg",
+                          "flex items-center gap-2 p-2 rounded-lg",
                           isDone ? "bg-green-500/10" : isActive ? "bg-blue-500/10" : isFailed ? "bg-red-500/10" : "bg-gray-800/30"
                         )}>
-                          <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                            {isDone ? <CheckCircleIcon className="w-4 h-4 text-green-400" /> :
-                              isActive ? <Loader2 className="w-4 h-4 text-blue-400 animate-spin" /> :
-                              isFailed ? <XCircleIcon className="w-4 h-4 text-red-400" /> :
-                              <div className="w-2 h-2 rounded-full bg-gray-600" />}
+                          <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                            {isDone ? <CheckCircleIcon className="w-3.5 h-3.5 text-green-400" /> :
+                              isActive ? <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" /> :
+                              isFailed ? <XCircleIcon className="w-3.5 h-3.5 text-red-400" /> :
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />}
                           </div>
-                          <span className={cn("text-sm", isDone ? "text-green-400" : isActive ? "text-blue-400" : isFailed ? "text-red-400" : "text-gray-500")}>
+                          <span className={cn("text-xs sm:text-sm", isDone ? "text-green-400" : isActive ? "text-blue-400" : isFailed ? "text-red-400" : "text-gray-500")}>
                             {STAGE_LABEL[stage.name] ?? stage.name}
                           </span>
                         </div>
@@ -659,17 +659,17 @@ export default function PagesPage() {
                   </div>
                   {createdDeployment.url && (
                     <a href={createdDeployment.url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 text-sm">
-                      <ExternalLinkIcon className="w-4 h-4 shrink-0" />
+                    className="flex items-center gap-2 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:text-blue-300 text-xs sm:text-sm">
+                      <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0" />
                       Buka preview deployment
                     </a>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">Deployment akan segera dimulai...</p>
+                <p className="text-gray-400 text-xs sm:text-sm">Deployment akan segera dimulai...</p>
               )}
               <div className="flex justify-end">
-                <Button onClick={closeCreate} className="bg-gray-700 hover:bg-gray-600">
+                <Button onClick={closeCreate} className="bg-gray-700 hover:bg-gray-600 h-8 px-3 text-xs">
                   Tutup
                 </Button>
               </div>
@@ -681,8 +681,8 @@ export default function PagesPage() {
       <Dialog open={!!domainProject} onOpenChange={(o) => !o && setDomainProject(null)}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <GlobeIcon className="w-4 h-4 text-orange-400" />
+            <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <GlobeIcon className="w-3.5 h-3.5 text-orange-400" />
               Custom Domains — {domainProject?.name}
             </DialogTitle>
           </DialogHeader>
