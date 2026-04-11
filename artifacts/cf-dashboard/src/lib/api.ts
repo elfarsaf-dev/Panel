@@ -45,8 +45,25 @@ async function cfRequest(path: string, options: RequestInit = {}) {
     },
   });
 
-  const data = await res.json();
+  const text = await res.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // Response is plain text (e.g. Worker scripts return raw JS)
+    data = text;
+  }
   return { ok: res.ok, status: res.status, data };
+}
+
+// Fetch raw text response (for Worker script downloads)
+async function cfRequestText(path: string) {
+  const url = `${PROXY_URL}${path}`;
+  const res = await fetch(url, {
+    headers: { Authorization: getAuthHeader() },
+  });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, data: text };
 }
 
 export async function testAuth(username: string, password: string) {
@@ -62,6 +79,7 @@ export async function testAuth(username: string, password: string) {
 
 export const api = {
   get: (path: string) => cfRequest(path),
+  getText: (path: string) => cfRequestText(path),
   post: (path: string, body: unknown) =>
     cfRequest(path, { method: "POST", body: JSON.stringify(body) }),
   put: (path: string, body: unknown) =>

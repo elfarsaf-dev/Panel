@@ -83,10 +83,10 @@ export default function WorkersPage() {
     setFormScript("");
     setDialogMode("edit");
     setFormLoading(true);
-    const res = await api.get(`/accounts/${accountId}/workers/scripts/${name}`);
-    if (res.ok) {
-      setFormScript(typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2));
-    } else {
+    try {
+      const res = await api.getText(`/accounts/${accountId}/workers/scripts/${name}`);
+      setFormScript(res.ok && res.data ? res.data : "// Gagal memuat script. Tulis ulang script di sini.");
+    } catch {
       setFormScript("// Gagal memuat script. Tulis ulang script di sini.");
     }
     setFormLoading(false);
@@ -98,10 +98,10 @@ export default function WorkersPage() {
     setFormScript("");
     setDialogMode("view");
     setFormLoading(true);
-    const res = await api.get(`/accounts/${accountId}/workers/scripts/${name}`);
-    if (res.ok) {
-      setFormScript(typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2));
-    } else {
+    try {
+      const res = await api.getText(`/accounts/${accountId}/workers/scripts/${name}`);
+      setFormScript(res.ok && res.data ? res.data : "// Tidak dapat memuat script");
+    } catch {
       setFormScript("// Tidak dapat memuat script");
     }
     setFormLoading(false);
