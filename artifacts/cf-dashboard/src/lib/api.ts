@@ -1,4 +1,4 @@
-const PROXY_URL = "/api/cf-proxy";
+const PROXY_URL = "https://panelv1.elfar.my.id";
 
 let credentials: { username: string; password: string } | null = null;
 
