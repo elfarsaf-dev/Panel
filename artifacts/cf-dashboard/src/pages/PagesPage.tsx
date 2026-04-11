@@ -4,15 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   LayoutTemplateIcon, RefreshCwIcon, GlobeIcon, PlusIcon, Trash2Icon,
   ExternalLinkIcon, CheckCircleIcon, XCircleIcon, Loader2, ClockIcon,
-  ChevronRightIcon, LinkIcon, RocketIcon
+  LinkIcon, RocketIcon, GitBranchIcon, CalendarIcon
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -85,6 +84,11 @@ export default function PagesPage() {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [deploymentsLoading, setDeploymentsLoading] = useState(false);
 
+  // Delete project
+  const [deleteProject, setDeleteProject] = useState<PagesProject | null>(null);
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
   const fetchProjects = async (accId?: string) => {
     setLoading(true);
     let aid = accId ?? accountId;
@@ -107,6 +111,7 @@ export default function PagesPage() {
     setDomainProject(project);
     setDomainsLoading(true);
     setDomains([]);
+    setNewDomain("");
     const res = await api.get(`/accounts/${accountId}/pages/projects/${project.name}/domains`);
     if (res.ok) setDomains((res.data as { result: PagesDomain[] }).result ?? []);
     setDomainsLoading(false);
@@ -147,6 +152,25 @@ export default function PagesPage() {
     setDeploymentsLoading(false);
   };
 
+  const openDeleteProject = (project: PagesProject) => {
+    setDeleteProject(project);
+    setDeleteConfirmName("");
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!deleteProject || deleteConfirmName !== deleteProject.name) return;
+    setDeletingProject(true);
+    const res = await api.delete(`/accounts/${accountId}/pages/projects/${deleteProject.name}`);
+    if (res.ok) {
+      toast({ title: `Project "${deleteProject.name}" berhasil dihapus` });
+      setProjects((p) => p.filter((x) => x.name !== deleteProject.name));
+      setDeleteProject(null);
+    } else {
+      toast({ title: "Gagal menghapus project", variant: "destructive" });
+    }
+    setDeletingProject(false);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
@@ -175,6 +199,7 @@ export default function PagesPage() {
               {projects.map((project) => {
                 const latestStage = project.latest_deployment?.latest_stage;
                 const prodUrl = project.subdomain ? `https://${project.subdomain}.pages.dev` : null;
+                const repo = project.source?.config?.repo_name;
                 return (
                   <div key={project.id} className="p-3 sm:p-4 hover:bg-gray-800/30 transition-colors">
                     <div className="flex items-start gap-3">
@@ -193,11 +218,21 @@ export default function PagesPage() {
                             {project.subdomain}.pages.dev
                           </a>
                         )}
-                        {project.domains?.length > 0 && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {project.domains.length} custom domain
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          {repo && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              <GitBranchIcon className="w-3 h-3" />{repo}
+                            </p>
+                          )}
+                          {project.domains?.length > 0 && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              <GlobeIcon className="w-3 h-3" />{project.domains.length} custom domain
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-600 flex items-center gap-1">
+                            <CalendarIcon className="w-3 h-3" />{formatDate(project.created_on)}
                           </p>
-                        )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button size="sm" variant="ghost"
@@ -211,6 +246,12 @@ export default function PagesPage() {
                           onClick={() => openDomains(project)}>
                           <GlobeIcon className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Domain</span>
+                        </Button>
+                        <Button size="sm" variant="ghost"
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                          onClick={() => openDeleteProject(project)}
+                          title="Hapus project">
+                          <Trash2Icon className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -232,7 +273,6 @@ export default function PagesPage() {
             </DialogTitle>
           </DialogHeader>
 
-          {/* Add domain form */}
           <div className="flex gap-2">
             <Input
               placeholder="contoh.com atau sub.contoh.com"
@@ -246,7 +286,6 @@ export default function PagesPage() {
             </Button>
           </div>
 
-          {/* Domain list */}
           <div className="space-y-2 max-h-72 overflow-y-auto">
             {domainsLoading ? (
               <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
@@ -271,7 +310,6 @@ export default function PagesPage() {
             )}
           </div>
 
-          {/* Pages.dev subdomain */}
           {domainProject?.subdomain && (
             <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
               <ExternalLinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
@@ -349,6 +387,45 @@ export default function PagesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete project confirm */}
+      <Dialog open={!!deleteProject} onOpenChange={(o) => { if (!o) setDeleteProject(null); }}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-white w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2Icon className="w-4 h-4" /> Hapus Project
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-gray-300 text-sm">
+              Ini akan <strong className="text-red-400">menghapus permanen</strong> project{" "}
+              <strong className="text-white">{deleteProject?.name}</strong> beserta semua deployment dan custom domain-nya.
+            </p>
+            <div className="space-y-1.5">
+              <p className="text-xs text-gray-400">
+                Ketik <strong className="text-white font-mono">{deleteProject?.name}</strong> untuk konfirmasi
+              </p>
+              <Input
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                placeholder={deleteProject?.name}
+                className="bg-gray-800 border-gray-700 text-white font-mono placeholder:text-gray-600"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setDeleteProject(null)} className="text-gray-400">Batal</Button>
+              <Button
+                onClick={confirmDeleteProject}
+                disabled={deletingProject || deleteConfirmName !== deleteProject?.name}
+                className="bg-red-600 hover:bg-red-700 disabled:opacity-40"
+              >
+                {deletingProject ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Hapus Project
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
