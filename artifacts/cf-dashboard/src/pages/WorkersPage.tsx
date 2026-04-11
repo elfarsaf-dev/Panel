@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, getCredentials } from "@/lib/api";
+import { api, getCredentials, CLOUDFLARE_ACCOUNT_ID } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ export default function WorkersPage() {
   const { toast } = useToast();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(CLOUDFLARE_ACCOUNT_ID);
 
   const [dialogMode, setDialogMode] = useState<DialogMode | null>(null);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
@@ -93,18 +93,7 @@ export default function WorkersPage() {
 
   const fetchWorkers = async (accId?: string) => {
     setLoading(true);
-    let aid = accId ?? accountId;
-    if (!aid) {
-      const zonesRes = await api.get("/zones?per_page=1");
-      if (zonesRes.ok) {
-        const zones = (zonesRes.data as { result: { account: { id: string } }[] }).result;
-        if (zones[0]?.account?.id) {
-          aid = zones[0].account.id;
-          setAccountId(aid);
-        }
-      }
-    }
-    if (!aid) { setLoading(false); return; }
+    const aid = accId ?? accountId;
     const res = await api.get(`/accounts/${aid}/workers/scripts`);
     if (res.ok) setWorkers((res.data as { result: Worker[] }).result ?? []);
     setLoading(false);

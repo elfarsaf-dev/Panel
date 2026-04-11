@@ -1,5 +1,8 @@
 const PROXY_URL = "https://panelv1.elfar.my.id";
 
+// Account ID sudah di-hardcode di proxy, gunakan langsung
+export const CLOUDFLARE_ACCOUNT_ID = "5644d8fcfaf76d801b14f19fba6992d3";
+
 let credentials: { username: string; password: string } | null = null;
 
 export function setCredentials(username: string, password: string) {

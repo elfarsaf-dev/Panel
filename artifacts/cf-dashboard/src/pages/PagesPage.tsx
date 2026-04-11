@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { api } from "@/lib/api";
+import { api, CLOUDFLARE_ACCOUNT_ID } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ const STAGE_LABEL: Record<string, string> = {
 
 export default function PagesPage() {
   const { toast } = useToast();
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(CLOUDFLARE_ACCOUNT_ID);
   const [projects, setProjects] = useState<PagesProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -128,45 +128,17 @@ export default function PagesPage() {
   const [deployPollLoading, setDeployPollLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const resolveAccountId = async (): Promise<string> => {
-    // Try zones first
-    const zonesRes = await api.get("/zones?per_page=1");
-    if (zonesRes.ok) {
-      const zones = (zonesRes.data as { result: { account: { id: string } }[] }).result;
-      if (zones?.[0]?.account?.id) return zones[0].account.id;
-    }
-    // Try accounts list
-    const accRes = await api.get("/accounts?per_page=5");
-    if (accRes.ok) {
-      const accounts = (accRes.data as { result: { id: string }[] }).result;
-      if (accounts?.[0]?.id) return accounts[0].id;
-    }
-    return "";
-  };
-
   const fetchProjects = async (accId?: string) => {
     setLoading(true);
     setFetchError("");
-    let aid = accId ?? accountId;
-    if (!aid) {
-      aid = await resolveAccountId();
-      if (aid) setAccountId(aid);
-    }
-    if (!aid) {
-      setFetchError("Gagal mendapatkan Account ID. Pastikan API key memiliki akses ke account.");
-      setLoading(false);
-      return;
-    }
+    const aid = accId ?? accountId;
     const res = await api.get(`/accounts/${aid}/pages/projects?per_page=100`);
     if (res.ok) {
       const result = (res.data as { result: PagesProject[] }).result ?? [];
       setProjects(result);
-      if (result.length === 0) {
-        setFetchError(`API berhasil tapi belum ada project. Account ID: ${aid}`);
-      }
     } else {
       const errMsg = (res.data as { errors?: { message: string }[] })?.errors?.[0]?.message ?? "Gagal mengambil data";
-      setFetchError(`Error ${res.status}: ${errMsg} (Account: ${aid})`);
+      setFetchError(`Error ${res.status}: ${errMsg}`);
     }
     setLoading(false);
   };
@@ -255,10 +227,7 @@ export default function PagesPage() {
   const loadGithubRepos = async () => {
     setReposLoading(true);
     setGithubRepos([]);
-    let aid = accountId;
-    if (!aid) { aid = await resolveAccountId(); if (aid) setAccountId(aid); }
-    if (!aid) { setReposLoading(false); setUseManual(true); return; }
-    const res = await api.get(`/accounts/${aid}/pages/github/repos?per_page=100`);
+    const res = await api.get(`/accounts/${accountId}/pages/github/repos?per_page=100`);
     if (res.ok) {
       const repos = (res.data as { result: GithubRepo[] }).result ?? [];
       setGithubRepos(repos);
