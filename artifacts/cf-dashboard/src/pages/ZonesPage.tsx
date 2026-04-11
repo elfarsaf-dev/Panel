@@ -41,6 +41,10 @@ export default function ZonesPage() {
   const [deleteZone, setDeleteZone] = useState<Zone | null>(null);
   const [detailZone, setDetailZone] = useState<Zone | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [newZoneName, setNewZoneName] = useState("");
 
   const fetchZones = async () => {
     setLoading(true);
@@ -81,6 +85,21 @@ export default function ZonesPage() {
     setActionLoading(null);
   };
 
+  const createZone = async () => {
+    if (!newZoneName.trim()) return;
+    setCreating(true);
+    const res = await api.post("/zones", { name: newZoneName.trim() });
+    if (res.ok) {
+      toast({ title: `Domain ${newZoneName} ditambahkan` });
+      setCreateOpen(false);
+      setNewZoneName("");
+      fetchZones();
+    } else {
+      toast({ title: "Gagal menambahkan domain", variant: "destructive" });
+    }
+    setCreating(false);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
@@ -88,10 +107,16 @@ export default function ZonesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-white">Domains / Zones</h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{zones.length} domain terdaftar</p>
         </div>
-        <Button size="sm" variant="outline" onClick={fetchZones} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2 shrink-0 h-8 px-2 sm:px-3">
-          <RefreshCwIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Refresh</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-orange-500 hover:bg-orange-600 gap-2 h-8 px-2 sm:px-3">
+            <PlusCircleIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Tambah Domain</span>
+          </Button>
+          <Button size="sm" variant="outline" onClick={fetchZones} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2 shrink-0 h-8 px-2 sm:px-3">
+            <RefreshCwIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+        </div>
       </div>
 
       <div className="relative">
@@ -182,6 +207,39 @@ export default function ZonesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={createOpen} onOpenChange={(o) => !o && setCreateOpen(false)}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-md w-[95vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PlusCircleIcon className="w-4 h-4 text-orange-400" />
+              Tambah Domain
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <p className="text-xs text-gray-400">Nama domain</p>
+              <Input
+                placeholder="contoh.com"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs text-gray-400">Catatan</p>
+              <p className="text-xs text-gray-500">Fitur ini menambah domain ke akun Cloudflare kamu, bukan hanya ke project tertentu.</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-gray-400">Batal</Button>
+              <Button onClick={createZone} disabled={creating || !newDomain.trim()} className="bg-orange-500 hover:bg-orange-600">
+                {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Tambah
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!detailZone} onOpenChange={(o) => !o && setDetailZone(null)}>
         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw]">
