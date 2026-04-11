@@ -56,6 +56,49 @@ async function cfRequest(path: string, options: RequestInit = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+// Extract script content from multipart/form-data response (Cloudflare ES Module workers)
+function extractScriptFromMultipart(text: string): string {
+  // Check if it's a multipart response (starts with --)
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith("--")) return text;
+
+  const lines = text.split("\n");
+  const scriptLines: string[] = [];
+  let inPart = false;
+  let headersDone = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trimEnd();
+
+    // New part boundary
+    if (trimmedLine.startsWith("--") && trimmedLine.length > 2 && !trimmedLine.endsWith("--")) {
+      inPart = true;
+      headersDone = false;
+      scriptLines.length = 0; // reset, take last part with JS content
+      continue;
+    }
+
+    // End boundary
+    if (trimmedLine.startsWith("--") && trimmedLine.endsWith("--")) break;
+
+    if (inPart && !headersDone) {
+      // Empty line = headers ended, content starts
+      if (trimmedLine === "") {
+        headersDone = true;
+      }
+      continue;
+    }
+
+    if (inPart && headersDone) {
+      scriptLines.push(lines[i]);
+    }
+  }
+
+  const result = scriptLines.join("\n").trimEnd();
+  return result || text;
+}
+
 // Fetch raw text response (for Worker script downloads)
 async function cfRequestText(path: string) {
   const url = `${PROXY_URL}${path}`;
@@ -63,7 +106,8 @@ async function cfRequestText(path: string) {
     headers: { Authorization: getAuthHeader() },
   });
   const text = await res.text();
-  return { ok: res.ok, status: res.status, data: text };
+  const data = extractScriptFromMultipart(text);
+  return { ok: res.ok, status: res.status, data };
 }
 
 export async function testAuth(username: string, password: string) {
