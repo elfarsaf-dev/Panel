@@ -19,6 +19,7 @@ import {
   DatabaseIcon,
   NetworkIcon,
   CodeIcon,
+  LayoutTemplateIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ const navItems = [
   { icon: DatabaseIcon, label: "DNS Records", href: "/dns" },
   { icon: MailIcon, label: "Email Routing", href: "/email" },
   { icon: CodeIcon, label: "Workers & Scripts", href: "/workers" },
+  { icon: LayoutTemplateIcon, label: "Pages", href: "/pages" },
   { icon: ZapIcon, label: "Page Rules", href: "/page-rules" },
   { icon: ShieldIcon, label: "Firewall / WAF", href: "/firewall" },
   { icon: NetworkIcon, label: "SSL / TLS", href: "/ssl" },

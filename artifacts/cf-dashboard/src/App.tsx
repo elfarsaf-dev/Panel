@@ -15,6 +15,7 @@ import SSLPage from "@/pages/SSLPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import CachePage from "@/pages/CachePage";
 import PageRulesPage from "@/pages/PageRulesPage";
+import PagesPage from "@/pages/PagesPage";
 import SettingsPage from "@/pages/SettingsPage";
 
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route path="/dns" component={DNSPage} />
         <Route path="/email" component={EmailRoutingPage} />
         <Route path="/workers" component={WorkersPage} />
+        <Route path="/pages" component={PagesPage} />
         <Route path="/page-rules" component={PageRulesPage} />
         <Route path="/firewall" component={FirewallPage} />
         <Route path="/ssl" component={SSLPage} />
