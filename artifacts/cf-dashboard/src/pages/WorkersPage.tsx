@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { api, getCredentials } from "@/lib/api";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { CodeIcon, PlusIcon, Trash2Icon, RefreshCwIcon, EyeIcon, Loader2, ClockIcon, ExternalLinkIcon } from "lucide-react";
+import { CodeIcon, PlusIcon, Trash2Icon, RefreshCwIcon, EyeIcon, Loader2, ClockIcon, PencilIcon } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface Worker {
@@ -30,22 +30,26 @@ const DEFAULT_SCRIPT = `export default {
 };
 `;
 
+type DialogMode = "add" | "edit" | "view";
+
 export default function WorkersPage() {
   const { toast } = useToast();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountId, setAccountId] = useState("");
+
+  const [dialogMode, setDialogMode] = useState<DialogMode | null>(null);
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+
+  const [formName, setFormName] = useState("");
+  const [formScript, setFormScript] = useState(DEFAULT_SCRIPT);
+  const [formLoading, setFormLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const [deleteWorker, setDeleteWorker] = useState<Worker | null>(null);
-  const [viewWorker, setViewWorker] = useState<Worker | null>(null);
-  const [workerScript, setWorkerScript] = useState("");
-  const [scriptLoading, setScriptLoading] = useState(false);
-  const [deployOpen, setDeployOpen] = useState(false);
-  const [deployForm, setDeployForm] = useState({ name: "", script: DEFAULT_SCRIPT });
-  const [deploying, setDeploying] = useState(false);
 
   const fetchWorkers = async (accId?: string) => {
     setLoading(true);
-    // First get account id from zones
     let aid = accId ?? accountId;
     if (!aid) {
       const zonesRes = await api.get("/zones?per_page=1");
@@ -65,17 +69,71 @@ export default function WorkersPage() {
 
   useEffect(() => { fetchWorkers(); }, []);
 
-  const viewScript = async (worker: Worker) => {
-    setViewWorker(worker);
-    setScriptLoading(true);
-    const name = worker.id ?? worker.script_name;
+  const openAdd = () => {
+    setSelectedWorker(null);
+    setFormName("");
+    setFormScript(DEFAULT_SCRIPT);
+    setDialogMode("add");
+  };
+
+  const openEdit = async (worker: Worker) => {
+    const name = worker.id ?? worker.script_name ?? "";
+    setSelectedWorker(worker);
+    setFormName(name);
+    setFormScript("");
+    setDialogMode("edit");
+    setFormLoading(true);
     const res = await api.get(`/accounts/${accountId}/workers/scripts/${name}`);
     if (res.ok) {
-      setWorkerScript(typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2));
+      setFormScript(typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2));
     } else {
-      setWorkerScript("// Tidak dapat memuat script");
+      setFormScript("// Gagal memuat script. Tulis ulang script di sini.");
     }
-    setScriptLoading(false);
+    setFormLoading(false);
+  };
+
+  const openView = async (worker: Worker) => {
+    const name = worker.id ?? worker.script_name ?? "";
+    setSelectedWorker(worker);
+    setFormScript("");
+    setDialogMode("view");
+    setFormLoading(true);
+    const res = await api.get(`/accounts/${accountId}/workers/scripts/${name}`);
+    if (res.ok) {
+      setFormScript(typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2));
+    } else {
+      setFormScript("// Tidak dapat memuat script");
+    }
+    setFormLoading(false);
+  };
+
+  const saveWorker = async () => {
+    if (!formName.trim()) return;
+    setSaving(true);
+    const formData = new FormData();
+    const blob = new Blob([formScript], { type: "application/javascript" });
+    formData.append("script", blob, "worker.js");
+
+    try {
+      const creds = getCredentials();
+      const authHeader = creds ? "Basic " + btoa(`${creds.username}:${creds.password}`) : "";
+      const res = await fetch(`https://panelv1.elfar.my.id/accounts/${accountId}/workers/scripts/${formName.trim()}`, {
+        method: "PUT",
+        headers: { Authorization: authHeader },
+        body: formData,
+      });
+      if (res.ok) {
+        toast({ title: dialogMode === "edit" ? `Worker "${formName}" diperbarui` : `Worker "${formName}" berhasil di-deploy` });
+        setDialogMode(null);
+        fetchWorkers(accountId);
+      } else {
+        const errText = await res.text();
+        toast({ title: "Gagal menyimpan worker", description: errText.slice(0, 120), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Gagal menghubungi API", variant: "destructive" });
+    }
+    setSaving(false);
   };
 
   const deleteWorkerConfirm = async () => {
@@ -91,39 +149,10 @@ export default function WorkersPage() {
     setDeleteWorker(null);
   };
 
-  const deployWorker = async () => {
-    setDeploying(true);
-    const formData = new FormData();
-    const blob = new Blob([deployForm.script], { type: "application/javascript" });
-    formData.append("script", blob, "worker.js");
-    
-    try {
-      const stored = localStorage.getItem("cf_creds");
-      const creds = stored ? JSON.parse(stored) : null;
-      const authHeader = creds ? "Basic " + btoa(`${creds.username}:${creds.password}`) : "";
-      const res = await fetch(`https://panelv1.elfar.my.id/accounts/${accountId}/workers/scripts/${deployForm.name}`, {
-        method: "PUT",
-        headers: {
-          Authorization: authHeader,
-        },
-        body: formData,
-      });
-      if (res.ok) {
-        toast({ title: `Worker "${deployForm.name}" berhasil di-deploy` });
-        setDeployOpen(false);
-        setDeployForm({ name: "", script: DEFAULT_SCRIPT });
-        fetchWorkers(accountId);
-      } else {
-        toast({ title: "Gagal deploy worker", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Gagal menghubungi API", variant: "destructive" });
-    }
-    setDeploying(false);
-  };
+  const isEditAdd = dialogMode === "add" || dialogMode === "edit";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Workers & Scripts</h1>
@@ -133,8 +162,8 @@ export default function WorkersPage() {
           <Button size="sm" variant="outline" onClick={() => fetchWorkers()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2">
             <RefreshCwIcon className="w-4 h-4" /> Refresh
           </Button>
-          <Button size="sm" onClick={() => setDeployOpen(true)} className="bg-orange-500 hover:bg-orange-600 gap-1.5">
-            <PlusIcon className="w-4 h-4" /> Deploy Worker
+          <Button size="sm" onClick={openAdd} className="bg-orange-500 hover:bg-orange-600 gap-1.5">
+            <PlusIcon className="w-4 h-4" /> Worker Baru
           </Button>
         </div>
       </div>
@@ -147,7 +176,7 @@ export default function WorkersPage() {
             <div className="text-center py-12">
               <CodeIcon className="w-10 h-10 text-gray-600 mx-auto mb-3" />
               <p className="text-gray-400">Belum ada Worker script</p>
-              <p className="text-xs text-gray-600 mt-1">Klik "Deploy Worker" untuk membuat script baru</p>
+              <p className="text-xs text-gray-600 mt-1">Klik "Worker Baru" untuk deploy script</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-800">
@@ -161,7 +190,7 @@ export default function WorkersPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{name}</p>
-                        <div className="flex items-center gap-3 mt-0.5">
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                           <p className="text-xs text-gray-500 flex items-center gap-1">
                             <ClockIcon className="w-3 h-3" />
                             {formatDate(worker.modified_on)}
@@ -172,11 +201,32 @@ export default function WorkersPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => viewScript(worker)} title="Lihat script">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-700"
+                        onClick={() => openView(worker)}
+                        title="Lihat script"
+                      >
                         <EyeIcon className="w-3.5 h-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setDeleteWorker(worker)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-gray-400 hover:text-orange-400 hover:bg-orange-500/10"
+                        onClick={() => openEdit(worker)}
+                        title="Edit script"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                        onClick={() => setDeleteWorker(worker)}
+                        title="Hapus worker"
+                      >
                         <Trash2Icon className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -188,57 +238,85 @@ export default function WorkersPage() {
         </CardContent>
       </Card>
 
-      {/* View script dialog */}
-      <Dialog open={!!viewWorker} onOpenChange={(o) => !o && setViewWorker(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl max-h-[80vh] overflow-auto">
+      {/* Add / Edit dialog */}
+      <Dialog open={isEditAdd} onOpenChange={(o) => !o && setDialogMode(null)}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl w-[95vw] max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CodeIcon className="w-4 h-4 text-purple-400" />
-              {viewWorker?.id ?? viewWorker?.script_name}
+              {dialogMode === "edit" ? `Edit Worker: ${formName}` : "Deploy Worker Baru"}
             </DialogTitle>
-          </DialogHeader>
-          {scriptLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            </div>
-          ) : (
-            <pre className="text-xs text-green-400 bg-gray-950 rounded-lg p-4 overflow-auto font-mono leading-relaxed whitespace-pre-wrap">
-              {workerScript}
-            </pre>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Deploy dialog */}
-      <Dialog open={deployOpen} onOpenChange={setDeployOpen}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl max-h-[80vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Deploy Worker Baru</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-gray-300 text-xs">Nama Worker</Label>
               <Input
-                value={deployForm.name}
-                onChange={(e) => setDeployForm(p => ({ ...p, name: e.target.value }))}
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
                 placeholder="my-worker"
-                className="bg-gray-800 border-gray-700 text-white font-mono"
+                disabled={dialogMode === "edit"}
+                className="bg-gray-800 border-gray-700 text-white font-mono disabled:opacity-60"
               />
+              {dialogMode === "edit" && (
+                <p className="text-xs text-gray-500">Nama tidak bisa diubah saat edit. Deploy baru untuk nama berbeda.</p>
+              )}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-gray-300 text-xs">Script (JavaScript)</Label>
-              <textarea
-                value={deployForm.script}
-                onChange={(e) => setDeployForm(p => ({ ...p, script: e.target.value }))}
-                rows={12}
-                className="w-full rounded-lg bg-gray-950 border border-gray-700 text-green-400 font-mono text-xs p-3 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none"
-              />
+              <Label className="text-gray-300 text-xs">Script (JavaScript / ES Module)</Label>
+              {formLoading ? (
+                <div className="flex items-center justify-center py-10 bg-gray-950 rounded-lg border border-gray-700">
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+                  <span className="text-gray-400 text-sm">Memuat script...</span>
+                </div>
+              ) : (
+                <textarea
+                  value={formScript}
+                  onChange={(e) => setFormScript(e.target.value)}
+                  rows={14}
+                  className="w-full rounded-lg bg-gray-950 border border-gray-700 text-green-400 font-mono text-xs p-3 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-y"
+                />
+              )}
             </div>
           </div>
-          <DialogFooter className="gap-2 pt-2">
-            <Button variant="ghost" onClick={() => setDeployOpen(false)} className="text-gray-400">Batal</Button>
-            <Button onClick={deployWorker} disabled={deploying || !deployForm.name} className="bg-orange-500 hover:bg-orange-600">
-              {deploying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Deploy
+          <DialogFooter className="gap-2 pt-2 flex-col sm:flex-row">
+            <Button variant="ghost" onClick={() => setDialogMode(null)} className="text-gray-400 w-full sm:w-auto">Batal</Button>
+            <Button
+              onClick={saveWorker}
+              disabled={saving || !formName.trim() || formLoading}
+              className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
+            >
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {dialogMode === "edit" ? "Simpan Perubahan" : "Deploy"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View script dialog */}
+      <Dialog open={dialogMode === "view"} onOpenChange={(o) => !o && setDialogMode(null)}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl w-[95vw] max-h-[85vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CodeIcon className="w-4 h-4 text-purple-400" />
+              {selectedWorker?.id ?? selectedWorker?.script_name}
+            </DialogTitle>
+          </DialogHeader>
+          {formLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <pre className="text-xs text-green-400 bg-gray-950 rounded-lg p-4 overflow-auto font-mono leading-relaxed whitespace-pre-wrap">
+              {formScript}
+            </pre>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => selectedWorker && openEdit(selectedWorker)}
+              className="border-orange-500/40 text-orange-400 hover:bg-orange-500/10 gap-2"
+            >
+              <PencilIcon className="w-4 h-4" /> Edit Script Ini
             </Button>
           </DialogFooter>
         </DialogContent>
