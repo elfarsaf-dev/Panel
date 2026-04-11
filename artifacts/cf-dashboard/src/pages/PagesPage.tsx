@@ -132,7 +132,7 @@ export default function PagesPage() {
     setLoading(true);
     setFetchError("");
     const aid = accId ?? accountId;
-    const res = await api.get(`/accounts/${aid}/pages/projects?per_page=100`);
+    const res = await api.get(`/accounts/${aid}/pages/projects`);
     if (res.ok) {
       const result = (res.data as { result: PagesProject[] }).result ?? [];
       setProjects(result);
@@ -187,7 +187,7 @@ export default function PagesPage() {
     setDeployProject(project);
     setDeploymentsLoading(true);
     setDeployments([]);
-    const res = await api.get(`/accounts/${accountId}/pages/projects/${project.name}/deployments?per_page=10`);
+    const res = await api.get(`/accounts/${accountId}/pages/projects/${project.name}/deployments`);
     if (res.ok) setDeployments((res.data as { result: Deployment[] }).result ?? []);
     setDeploymentsLoading(false);
   };
@@ -227,7 +227,7 @@ export default function PagesPage() {
   const loadGithubRepos = async () => {
     setReposLoading(true);
     setGithubRepos([]);
-    const res = await api.get(`/accounts/${accountId}/pages/github/repos?per_page=100`);
+    const res = await api.get(`/accounts/${accountId}/pages/github/repos`);
     if (res.ok) {
       const repos = (res.data as { result: GithubRepo[] }).result ?? [];
       setGithubRepos(repos);
