@@ -98,10 +98,13 @@ export default function WorkersPage() {
     formData.append("script", blob, "worker.js");
     
     try {
-      const res = await fetch(`https://panelv1.elfar.my.id/accounts/${accountId}/workers/scripts/${deployForm.name}`, {
+      const stored = localStorage.getItem("cf_creds");
+      const creds = stored ? JSON.parse(stored) : null;
+      const authHeader = creds ? "Basic " + btoa(`${creds.username}:${creds.password}`) : "";
+      const res = await fetch(`/api/cf-proxy/accounts/${accountId}/workers/scripts/${deployForm.name}`, {
         method: "PUT",
         headers: {
-          Authorization: "Basic " + btoa(localStorage.getItem("cf_creds") ? JSON.parse(localStorage.getItem("cf_creds")!).username + ":" + JSON.parse(localStorage.getItem("cf_creds")!).password : ""),
+          Authorization: authHeader,
         },
         body: formData,
       });
