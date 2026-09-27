@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   LayoutTemplateIcon, RefreshCwIcon, GlobeIcon, PlusIcon, Trash2Icon,
@@ -41,6 +42,11 @@ interface PagesDomain {
   name: string;
   status?: string;
   created_on?: string;
+}
+
+interface Zone {
+  id: string;
+  name: string;
 }
 
 interface Deployment {
@@ -94,9 +100,11 @@ export default function PagesPage() {
   const [domainProject, setDomainProject] = useState<PagesProject | null>(null);
   const [domains, setDomains] = useState<PagesDomain[]>([]);
   const [domainsLoading, setDomainsLoading] = useState(false);
-  const [newDomain, setNewDomain] = useState("");
+  const [domainZoneId, setDomainZoneId] = useState("");
+  const [domainSubdomain, setDomainSubdomain] = useState("");
   const [addingDomain, setAddingDomain] = useState(false);
   const [deleteDomain, setDeleteDomain] = useState<PagesDomain | null>(null);
+  const [zones, setZones] = useState<Zone[]>([]);
 
   const [deployProject, setDeployProject] = useState<PagesProject | null>(null);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
@@ -139,39 +147,96 @@ export default function PagesPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchProjects(); }, []);
+  const fetchZones = async () => {
+    const res = await api.get("/zones?per_page=50");
+    if (res.ok) {
+      const zlist = (res.data as { result: Zone[] }).result ?? [];
+      setZones(zlist);
+      if (zlist.length > 0) {
+        setDomainZoneId((prev) => prev || zlist[0].id);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+    fetchZones();
+  }, []);
 
   const openDomains = async (project: PagesProject) => {
     setDomainProject(project);
     setDomainsLoading(true);
     setDomains([]);
-    setNewDomain("");
+    setDomainZoneId((prev) => prev || zones[0]?.id || "");
+    setDomainSubdomain("");
     const res = await api.get(`/accounts/${accountId}/pages/projects/${project.name}/domains`);
     if (res.ok) setDomains((res.data as { result: PagesDomain[] }).result ?? []);
     setDomainsLoading(false);
   };
 
   const addDomain = async () => {
-    if (!newDomain.trim() || !domainProject) return;
+    if (!domainProject) return;
+    const selectedZone = zones.find((z) => z.id === domainZoneId) || zones[0];
+    if (!selectedZone) {
+      toast({ title: "Pilih domain terlebih dahulu", variant: "destructive" });
+      return;
+    }
+
+    const cleanSub = domainSubdomain.trim().toLowerCase();
+    let hostname = selectedZone.name;
+    if (cleanSub && cleanSub !== "@") {
+      if (cleanSub.endsWith(`.${selectedZone.name}`)) {
+        hostname = cleanSub;
+      } else {
+        hostname = `${cleanSub}.${selectedZone.name}`;
+      }
+    }
+
     setAddingDomain(true);
-    const res = await api.post(`/accounts/${accountId}/pages/projects/${domainProject.name}/domains`, { name: newDomain.trim() });
-    if (res.ok) {
-      toast({ title: `Domain ${newDomain} berhasil ditambahkan` });
-      setNewDomain("");
-      openDomains(domainProject);
-    } else {
-      toast({ title: "Gagal menambah domain", variant: "destructive" });
+    try {
+      const res = await api.post(`/accounts/${accountId}/pages/projects/${domainProject.name}/domains`, {
+        name: hostname,
+      });
+
+      if (res.ok) {
+        toast({ title: `Domain "${hostname}" berhasil dihubungkan ke Pages!` });
+        setDomainSubdomain("");
+        openDomains(domainProject);
+      } else {
+        let errMsg = "Gagal menambah domain";
+        try {
+          const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+          if (data?.errors?.length) {
+            errMsg = data.errors.map((e: { message: string }) => e.message).join(", ");
+          }
+        } catch {}
+        toast({ title: "Gagal menambah domain", description: errMsg, variant: "destructive" });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Koneksi terputus";
+      toast({ title: "Gagal menambah domain", description: message, variant: "destructive" });
     }
     setAddingDomain(false);
   };
 
   const confirmDeleteDomain = async () => {
     if (!deleteDomain || !domainProject) return;
-    const res = await api.delete(`/accounts/${accountId}/pages/projects/${domainProject.name}/domains/${deleteDomain.name}`);
-    if (res.ok) {
-      toast({ title: `Domain ${deleteDomain.name} dihapus` });
-      setDomains((d) => d.filter((x) => x.name !== deleteDomain.name));
-    } else {
+    try {
+      const res = await api.delete(`/accounts/${accountId}/pages/projects/${domainProject.name}/domains/${deleteDomain.name}`);
+      if (res.ok) {
+        toast({ title: `Domain "${deleteDomain.name}" dihapus` });
+        setDomains((d) => d.filter((x) => x.name !== deleteDomain.name));
+      } else {
+        let errMsg = "Gagal menghapus domain";
+        try {
+          const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+          if (data?.errors?.length) {
+            errMsg = data.errors.map((e: { message: string }) => e.message).join(", ");
+          }
+        } catch {}
+        toast({ title: "Gagal menghapus domain", description: errMsg, variant: "destructive" });
+      }
+    } catch {
       toast({ title: "Gagal menghapus domain", variant: "destructive" });
     }
     setDeleteDomain(null);
@@ -686,46 +751,121 @@ export default function PagesPage() {
               Custom Domains — {domainProject?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex gap-2">
-            <Input
-              placeholder="contoh.com atau sub.contoh.com"
-              value={newDomain}
-              onChange={(e) => setNewDomain(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addDomain()}
-              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 flex-1"
-            />
-            <Button onClick={addDomain} disabled={addingDomain || !newDomain.trim()} className="bg-orange-500 hover:bg-orange-600 shrink-0">
-              {addingDomain ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusIcon className="w-4 h-4" />}
-            </Button>
-          </div>
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {domainsLoading ? (
-              <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-            ) : domains.length === 0 ? (
-              <div className="text-center py-8">
-                <LinkIcon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-400 text-sm">Belum ada custom domain</p>
+          <p className="text-xs text-gray-400">
+            Pilih domain yang tersedia di akunmu, ketik subdomain, lalu klik hubungkan untuk menghubungkan Pages project ini (Cloudflare otomatis membuat DNS & SSL).
+          </p>
+
+          <div className="bg-gray-800/60 p-3.5 rounded-lg border border-gray-700/80 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-300 font-medium">Domain Tersedia</Label>
+                <Select value={domainZoneId} onValueChange={setDomainZoneId}>
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white text-xs h-9">
+                    <SelectValue placeholder="Pilih domain..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    {zones.map((z) => (
+                      <SelectItem key={z.id} value={z.id} className="text-white hover:bg-gray-700 text-xs">
+                        {z.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
-              domains.map((d) => (
-                <div key={d.name} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{d.name}</p>
-                    <DomainStatusBadge status={d.status} />
-                  </div>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-500 hover:text-red-400 hover:bg-red-500/10 shrink-0"
-                    onClick={() => setDeleteDomain(d)}>
-                    <Trash2Icon className="w-3.5 h-3.5" />
-                  </Button>
+
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-300 font-medium">
+                  Subdomain <span className="text-gray-500 font-normal">(kosongkan untuk root domain)</span>
+                </Label>
+                <Input
+                  placeholder="misal: web atau app"
+                  value={domainSubdomain}
+                  onChange={(e) => setDomainSubdomain(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addDomain()}
+                  className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 text-xs h-9 font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Target Hostname Preview & Action */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-gray-700/50">
+              <div className="text-xs text-gray-400 truncate">
+                Target Hostname:{" "}
+                <span className="font-mono text-orange-400 font-semibold">
+                  {(() => {
+                    const curZone = zones.find((z) => z.id === domainZoneId) || zones[0];
+                    if (!curZone) return "Belum ada domain di akun";
+                    const sub = domainSubdomain.trim().toLowerCase();
+                    if (!sub || sub === "@") return curZone.name;
+                    return sub.endsWith(`.${curZone.name}`) ? sub : `${sub}.${curZone.name}`;
+                  })()}
+                </span>
+              </div>
+              <Button
+                onClick={addDomain}
+                disabled={addingDomain || (!domainZoneId && zones.length === 0)}
+                size="sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5 h-8 px-3 shrink-0"
+              >
+                {addingDomain ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <PlusIcon className="w-3.5 h-3.5" />
+                )}
+                Hubungkan Domain
+              </Button>
+            </div>
+          </div>
+
+          {/* List Connected Domains */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-gray-400 px-1">
+              <span>Custom Domain Terhubung ({domains.length})</span>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {domainsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 </div>
-              ))
-            )}
+              ) : domains.length === 0 ? (
+                <div className="text-center py-6 bg-gray-950/40 rounded-lg border border-gray-800">
+                  <LinkIcon className="w-7 h-7 text-gray-600 mx-auto mb-1.5" />
+                  <p className="text-gray-400 text-xs">Belum ada custom domain terhubung</p>
+                  <p className="text-gray-600 text-[11px] mt-0.5">Pilih domain dan isi subdomain di atas untuk menambahkan</p>
+                </div>
+              ) : (
+                domains.map((d) => (
+                  <div key={d.name} className="flex items-center justify-between p-3 bg-gray-800/60 border border-gray-700/50 rounded-lg gap-3">
+                    <div className="min-w-0 flex items-center gap-2.5">
+                      <GlobeIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-white font-mono font-medium truncate">{d.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <DomainStatusBadge status={d.status} />
+                          {d.created_on && (
+                            <span className="text-[11px] text-gray-500">
+                              {formatDate(d.created_on)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-red-500/10 shrink-0"
+                      onClick={() => setDeleteDomain(d)}
+                      title="Hapus domain"
+                    >
+                      <Trash2Icon className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
           {domainProject?.subdomain && (
-            <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg overflow-hidden">
-              <ExternalLinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
+            <div className="flex items-center gap-2 p-2.5 bg-blue-500/5 border border-blue-500/20 rounded-lg overflow-hidden">
+              <ExternalLinkIcon className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               <p className="text-xs text-blue-400 font-mono truncate">{domainProject.subdomain}.pages.dev</p>
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs shrink-0">Default</Badge>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] py-0 px-1.5 h-4 ml-auto shrink-0">Default pages.dev</Badge>
             </div>
           )}
         </DialogContent>

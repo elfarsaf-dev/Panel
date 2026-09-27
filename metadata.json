@@ -1,0 +1,5 @@
+{
+  "name": "Cloudflare Dashboard",
+  "description": "Custom Cloudflare management dashboard for zones, DNS, workers, pages, firewall, cache, and analytics.",
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
