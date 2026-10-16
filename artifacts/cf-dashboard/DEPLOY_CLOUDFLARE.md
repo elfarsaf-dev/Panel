@@ -1,41 +1,37 @@
-# Deploy ke Cloudflare
+# Panduan Deploy ke Cloudflare Pages
 
-## Kebutuhan
-- Node.js
-- PNPM
-- Cloudflare API token
-- Proxy Cloudflare yang sudah menyisipkan `ACCOUNT_ID`
-
-## Build lokal
-```bash
-pnpm install
-pnpm --filter @workspace/cf-dashboard build
+## 1. Penyebab Error `Unknown lockfile version: bun.lock`
+Jika Anda melihat error seperti:
 ```
-
-## Jalankan lokal
-```bash
-pnpm --filter @workspace/cf-dashboard dev
+error: Unknown lockfile version at bun.lock:2:22
+UnknownLockfileVersion: failed to parse lockfile: 'bun.lock'
+error: lockfile had changes, but lockfile is frozen
 ```
+**Penyebabnya:**
+Cloudflare Pages mendeteksi keberadaan file `bun.lock` di root repository dan otomatis mencoba menjalankan `bun install --frozen-lockfile`. Karena format versi `bun.lock` tidak cocok dengan runtime Bun di Cloudflare Pages, build gagal.
 
-## Deploy ke Cloudflare Pages
-1. Masuk ke Cloudflare Dashboard
-2. Buka **Workers & Pages**
-3. Pilih **Create application**
-4. Pilih **Pages**
-5. Hubungkan repository GitHub
-6. Atur:
-   - **Build command**: `pnpm --filter @workspace/cf-dashboard build`
-   - **Build output directory**: `artifacts/cf-dashboard/dist`
-   - **Root directory**: kosongkan
-7. Tambahkan environment variable bila perlu
-8. Klik **Save and Deploy**
+**Solusi:**
+File `bun.lock` sudah dihapus dari repository sehingga Cloudflare Pages akan menggunakan `npm` standar.
 
-## Catatan penting
-- App ini butuh proxy API yang aktif di `https://panelv1.elfar.my.id`
-- Login pakai kredensial proxy, bukan Cloudflare dashboard langsung
-- Menu Pages di dashboard ini akan pakai API Cloudflare yang sudah diarahkan lewat proxy
+---
 
-## Kalau project Pages kosong
-- Pastikan token Cloudflare punya izin untuk **Cloudflare Pages**
-- Pastikan repo GitHub sudah terhubung ke Cloudflare
-- Pastikan account ID yang dipakai di proxy benar
+## 2. Pengaturan Build di Cloudflare Pages Dashboard
+
+Masuk ke **Cloudflare Dashboard** -> **Workers & Pages** -> Pilih project Pages Anda -> **Settings** -> **Builds & deployments**:
+
+### Konfigurasi Build:
+* **Framework preset**: `None` (atau `Vite`)
+* **Build command**: `npm run build`
+* **Build output directory**: `artifacts/cf-dashboard/dist/public`
+* **Root directory**: `/` (kosongkan)
+
+### Environment Variables (opsional / disarankan):
+Di bagian **Settings** -> **Environment variables**:
+* `NODE_VERSION`: `20` (atau `22`)
+
+---
+
+## 3. Catatan Penting Aplikasi
+* Aplikasi ini menggunakan proxy API yang aktif di `https://panelv1.elfar.my.id` (atau proxy kustom yang dikonfigurasi).
+* Login menggunakan kredensial proxy Anda.
+* Fitur Workers dengan Monaco Editor (VS Code style) berjalan sepenuhnya di frontend dan langsung terhubung ke API Cloudflare via proxy.
