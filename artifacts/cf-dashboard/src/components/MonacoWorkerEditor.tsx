@@ -20,6 +20,7 @@ import {
   Cpu,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ArrowRightToLine,
   Keyboard,
   ChevronDown,
@@ -344,7 +345,7 @@ export default function MonacoWorkerEditor({
 
   // Handle Termux CTRL actions
   const handleCtrlAction = useCallback(
-    (action: "find" | "comment" | "selectAll" | "save" | "duplicate" | "format") => {
+    (action: "find" | "comment" | "selectAll" | "save" | "duplicate" | "format" | "undo" | "redo") => {
       if (!editorRef.current) return;
       const editor = editorRef.current;
       switch (action) {
@@ -372,6 +373,14 @@ export default function MonacoWorkerEditor({
           editor.getAction("editor.action.formatDocument")?.run();
           editor.focus();
           break;
+        case "undo":
+          editor.trigger("keyboard", "undo", null);
+          editor.focus();
+          break;
+        case "redo":
+          editor.trigger("keyboard", "redo", null);
+          editor.focus();
+          break;
         case "save":
           onSave();
           break;
@@ -380,6 +389,48 @@ export default function MonacoWorkerEditor({
     },
     [onSave]
   );
+
+  const handleEsc = useCallback(() => {
+    if (!editorRef.current) return;
+    editorRef.current.trigger("keyboard", "closeFindWidget", null);
+    editorRef.current.trigger("keyboard", "hideSuggestWidget", null);
+    setIsCtrlActive(false);
+  }, []);
+
+  // Termux key latch: if user taps CTRL on toolbar then presses a key on phone keyboard
+  useEffect(() => {
+    if (!isCtrlActive) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (key === "f") {
+        e.preventDefault();
+        handleCtrlAction("find");
+      } else if (key === "a") {
+        e.preventDefault();
+        handleCtrlAction("selectAll");
+      } else if (key === "s") {
+        e.preventDefault();
+        handleCtrlAction("save");
+      } else if (key === "z") {
+        e.preventDefault();
+        handleCtrlAction("undo");
+      } else if (key === "y") {
+        e.preventDefault();
+        handleCtrlAction("redo");
+      } else if (key === "d") {
+        e.preventDefault();
+        handleCtrlAction("duplicate");
+      } else if (key === "/" || key === "?") {
+        e.preventDefault();
+        handleCtrlAction("comment");
+      } else if (key === "escape") {
+        e.preventDefault();
+        setIsCtrlActive(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isCtrlActive, handleCtrlAction]);
 
   // Termux-style snippet insertion & cursor navigation
   const insertSnippet = useCallback((text: string) => {
@@ -448,6 +499,23 @@ export default function MonacoWorkerEditor({
       }
     }
     const newPos = { lineNumber: line, column: col };
+    editor.setPosition(newPos);
+    editor.revealPositionInCenterIfOutsideViewport(newPos, 0);
+    editor.focus();
+  }, []);
+
+  const moveCursorVertical = useCallback((direction: -1 | 1) => {
+    if (!editorRef.current) return;
+    const editor = editorRef.current;
+    const pos = editor.getPosition();
+    if (!pos) return;
+    const model = editor.getModel();
+    if (!model) return;
+    const lineCount = model.getLineCount();
+    const targetLine = Math.min(Math.max(1, pos.lineNumber + direction), lineCount);
+    const maxCol = model.getLineMaxColumn(targetLine);
+    const targetCol = Math.min(pos.column, maxCol);
+    const newPos = { lineNumber: targetLine, column: targetCol };
     editor.setPosition(newPos);
     editor.revealPositionInCenterIfOutsideViewport(newPos, 0);
     editor.focus();
@@ -696,10 +764,11 @@ export default function MonacoWorkerEditor({
       {/* Termux-style Mobile Touch Action & Shortcut Toolbar */}
       {!isViewOnly && (
         <div className="flex flex-col shrink-0 select-none shadow-md z-30">
-          {/* CTRL Active Action Palette (pops up when CTRL is pressed) */}
+          {/* CTRL Active Action Palette (pops up when CTRL is active) */}
           {isCtrlActive && (
-            <div className="bg-[#1b2230] border-t border-b border-orange-500/50 px-2 py-1 flex items-center gap-1.5 overflow-x-auto text-xs">
-              <span className="text-[10px] font-mono font-bold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded border border-orange-500/30 shrink-0">
+            <div className="bg-[#1b2230] border-t border-b border-orange-500/50 px-2 py-1 flex items-center gap-1.5 overflow-x-auto text-xs animate-in slide-in-from-bottom-2 duration-150">
+              <span className="text-[10px] font-mono font-bold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded border border-orange-500/30 shrink-0 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-ping" />
                 CTRL +
               </span>
               <button
@@ -725,6 +794,22 @@ export default function MonacoWorkerEditor({
                 title="Pilih Semua Kode"
               >
                 <CopyCheck className="w-3 h-3 text-blue-400" /> A (Pilih Semua)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCtrlAction("undo")}
+                className="px-2 py-1 bg-[#121620] hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-200 border border-gray-700/80 rounded text-[11px] font-mono shrink-0 flex items-center gap-1"
+                title="Batalkan Perubahan (Undo)"
+              >
+                <Undo2 className="w-3 h-3 text-emerald-400" /> Z (Undo)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCtrlAction("redo")}
+                className="px-2 py-1 bg-[#121620] hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-200 border border-gray-700/80 rounded text-[11px] font-mono shrink-0 flex items-center gap-1"
+                title="Ulangi Perubahan (Redo)"
+              >
+                <Redo2 className="w-3 h-3 text-emerald-400" /> Y (Redo)
               </button>
               <button
                 type="button"
@@ -755,18 +840,14 @@ export default function MonacoWorkerEditor({
 
           {/* Main Termux Row */}
           <div className="bg-[#141822] border-t border-gray-800 px-1.5 py-1 flex items-center gap-1 overflow-x-auto shrink-0">
-            {/* CTRL Key button (Termux style toggle) */}
+            {/* ESC Key button */}
             <button
               type="button"
-              onClick={() => setIsCtrlActive(!isCtrlActive)}
-              className={`px-2 py-1 rounded text-[11px] font-mono font-bold shrink-0 flex items-center gap-1 shadow-xs transition-colors ${
-                isCtrlActive
-                  ? "bg-orange-500 text-white border border-orange-400 shadow-md ring-1 ring-orange-400"
-                  : "bg-[#1c2230] text-gray-200 hover:text-white hover:bg-orange-500/20 active:bg-orange-500/40 border border-gray-700/80"
-              }`}
-              title="Toggle Tombol CTRL (Cari, Komentar, Select All, dll)"
+              onClick={handleEsc}
+              className="px-2 py-1 bg-[#1c2230] hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white border border-gray-700/80 rounded text-[11px] font-mono font-bold shrink-0 shadow-xs"
+              title="Tombol ESC"
             >
-              CTRL
+              ESC
             </button>
 
             {/* TAB Key button */}
@@ -779,12 +860,27 @@ export default function MonacoWorkerEditor({
               <ArrowRightToLine className="w-3 h-3" /> TAB
             </button>
 
-            {/* Cursor Navigation Left & Right (Termux Arrow Keys) */}
+            {/* CTRL Key button (Termux style toggle) */}
+            <button
+              type="button"
+              onClick={() => setIsCtrlActive(!isCtrlActive)}
+              className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold shrink-0 flex items-center gap-1.5 shadow-xs transition-all ${
+                isCtrlActive
+                  ? "bg-orange-500 text-white border border-orange-300 shadow-md ring-2 ring-orange-500/50"
+                  : "bg-[#1c2230] text-orange-400 hover:text-white hover:bg-orange-500/20 active:bg-orange-500/40 border border-gray-700/80"
+              }`}
+              title="Toggle Tombol CTRL (Cari, Komentar, Select All, dll)"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${isCtrlActive ? "bg-white animate-ping" : "bg-orange-400"}`} />
+              CTRL
+            </button>
+
+            {/* Cursor Navigation Left, Right, Up, Down (Termux 4-Way Arrow Keys) */}
             <div className="flex items-center bg-[#1c2230] border border-gray-700/80 rounded shrink-0">
               <button
                 type="button"
                 onClick={() => moveCursor(-1)}
-                className="px-2 py-1 hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white text-xs shrink-0"
+                className="px-1.5 py-1 hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white text-xs shrink-0"
                 title="Geser Kursor Kiri"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -793,10 +889,28 @@ export default function MonacoWorkerEditor({
               <button
                 type="button"
                 onClick={() => moveCursor(1)}
-                className="px-2 py-1 hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white text-xs shrink-0"
+                className="px-1.5 py-1 hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white text-xs shrink-0"
                 title="Geser Kursor Kanan"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-[1px] h-3 bg-gray-700" />
+              <button
+                type="button"
+                onClick={() => moveCursorVertical(-1)}
+                className="px-1.5 py-1 hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white text-xs shrink-0"
+                title="Geser Kursor Atas"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-[1px] h-3 bg-gray-700" />
+              <button
+                type="button"
+                onClick={() => moveCursorVertical(1)}
+                className="px-1.5 py-1 hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white text-xs shrink-0"
+                title="Geser Kursor Bawah"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
               </button>
             </div>
 

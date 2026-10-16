@@ -13,10 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import {
   CodeIcon, PlusIcon, Trash2Icon, RefreshCwIcon, EyeIcon,
-  Loader2, ClockIcon, PencilIcon, GlobeIcon, LinkIcon, Route
+  Loader2, ClockIcon, PencilIcon, GlobeIcon, LinkIcon, Route,
+  Search, X
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import MonacoWorkerEditor from "@/components/MonacoWorkerEditor";
+import ZoneSelect from "@/components/ZoneSelect";
 
 interface Worker {
   id: string;
@@ -62,6 +64,7 @@ export default function WorkersPage() {
   const { toast } = useToast();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
+  const [workerSearch, setWorkerSearch] = useState("");
   const [accountId, setAccountId] = useState(CLOUDFLARE_ACCOUNT_ID);
 
   const [dialogMode, setDialogMode] = useState<DialogMode | null>(null);
@@ -391,12 +394,22 @@ export default function WorkersPage() {
 
   const isEditAdd = dialogMode === "add" || dialogMode === "edit";
 
+  const filteredWorkers = workers.filter((w) => {
+    const term = workerSearch.toLowerCase().trim();
+    if (!term) return true;
+    const name = (w.id ?? w.script_name ?? "").toLowerCase();
+    const model = (w.usage_model ?? "").toLowerCase();
+    return name.includes(term) || model.includes(term);
+  });
+
   return (
     <div className="space-y-4 sm:space-y-5 max-w-full overflow-hidden">
       <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl font-bold text-white truncate">Workers & Scripts</h1>
-          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{workers.length} worker aktif</p>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">
+            {workerSearch ? `${filteredWorkers.length} dari ${workers.length} worker aktif` : `${workers.length} worker aktif`}
+          </p>
         </div>
         <div className="flex gap-1.5 shrink-0">
           <Button size="sm" variant="outline" onClick={() => fetchWorkers()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 h-8 px-2 sm:px-3 text-xs">
@@ -411,6 +424,28 @@ export default function WorkersPage() {
         </div>
       </div>
 
+      {/* Search Bar for Workers */}
+      {workers.length > 0 && (
+        <div className="relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            placeholder="Cari worker berdasarkan nama script atau usage model..."
+            value={workerSearch}
+            onChange={(e) => setWorkerSearch(e.target.value)}
+            className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 text-xs sm:text-sm pl-9 pr-8 h-9 rounded-lg focus-visible:ring-orange-500"
+          />
+          {workerSearch && (
+            <button
+              type="button"
+              onClick={() => setWorkerSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       <Card className="bg-gray-900 border-gray-800 overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
@@ -421,9 +456,18 @@ export default function WorkersPage() {
               <p className="text-gray-400">Belum ada Worker script</p>
               <p className="text-xs text-gray-600 mt-1">Klik "Worker Baru" untuk deploy script</p>
             </div>
+          ) : filteredWorkers.length === 0 ? (
+            <div className="text-center py-10 px-4">
+              <Search className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+              <p className="text-gray-300 text-sm font-medium">Tidak ada worker yang cocok</p>
+              <p className="text-xs text-gray-500 mt-1">Tidak ditemukan worker dengan kata kunci "{workerSearch}"</p>
+              <Button size="sm" variant="ghost" onClick={() => setWorkerSearch("")} className="mt-3 text-xs text-orange-400 hover:text-orange-300">
+                Reset Pencarian
+              </Button>
+            </div>
           ) : (
             <div className="divide-y divide-gray-800">
-              {workers.map((worker) => {
+              {filteredWorkers.map((worker) => {
                 const name = worker.id ?? worker.script_name ?? "unknown";
                 return (
                   <div key={worker.id} className="flex items-center justify-between p-2.5 sm:p-4 hover:bg-gray-800/30 transition-colors group gap-2 min-w-0">
@@ -541,18 +585,12 @@ export default function WorkersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-300 font-medium">Domain Tersedia</Label>
-                    <Select value={domainZoneId} onValueChange={setDomainZoneId}>
-                      <SelectTrigger className="bg-gray-900 border-gray-700 text-white text-xs h-9">
-                        <SelectValue placeholder="Pilih domain..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
-                        {zones.map((z) => (
-                          <SelectItem key={z.id} value={z.id} className="text-white hover:bg-gray-700 text-xs">
-                            {z.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ZoneSelect
+                      zones={zones}
+                      value={domainZoneId}
+                      onChange={setDomainZoneId}
+                      placeholder="Pilih domain..."
+                    />
                   </div>
 
                   <div className="space-y-1">
@@ -654,16 +692,15 @@ export default function WorkersPage() {
             <TabsContent value="routes" className="mt-3 space-y-3">
               <p className="text-xs text-gray-500">Tambah route pola URL ke worker ini (misal: example.com/api/*)</p>
               <div className="space-y-2">
-                <Select value={selectedZoneId} onValueChange={(v) => { setSelectedZoneId(v); loadRoutes(v); }}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Pilih zone / domain..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    {zones.map((z) => (
-                      <SelectItem key={z.id} value={z.id} className="text-white hover:bg-gray-700">{z.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ZoneSelect
+                  zones={zones}
+                  value={selectedZoneId}
+                  onChange={(v) => {
+                    setSelectedZoneId(v);
+                    loadRoutes(v);
+                  }}
+                  placeholder="Pilih zone / domain..."
+                />
                 {selectedZoneId && (
                   <div className="flex gap-2">
                     <Input

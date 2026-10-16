@@ -14,10 +14,12 @@ import {
   LayoutTemplateIcon, RefreshCwIcon, GlobeIcon, PlusIcon, Trash2Icon,
   ExternalLinkIcon, CheckCircleIcon, XCircleIcon, Loader2, ClockIcon,
   LinkIcon, RocketIcon, GitBranchIcon, CalendarIcon, AlertCircleIcon,
-  ChevronRightIcon, ChevronLeftIcon, FolderGitIcon, TerminalIcon, FolderIcon
+  ChevronRightIcon, ChevronLeftIcon, FolderGitIcon, TerminalIcon, FolderIcon,
+  Search, X
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import ZoneSelect from "@/components/ZoneSelect";
 
 interface PagesProject {
   id: string;
@@ -96,6 +98,7 @@ export default function PagesPage() {
   const [projects, setProjects] = useState<PagesProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
 
   const [domainProject, setDomainProject] = useState<PagesProject | null>(null);
   const [domains, setDomains] = useState<PagesDomain[]>([]);
@@ -381,6 +384,18 @@ export default function PagesPage() {
     r.full_name.toLowerCase().includes(repoSearch.toLowerCase())
   );
 
+  const filteredProjects = projects.filter((p) => {
+    const term = projectSearch.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      p.name.toLowerCase().includes(term) ||
+      (p.subdomain && p.subdomain.toLowerCase().includes(term)) ||
+      (p.domains && p.domains.some((d) => d.toLowerCase().includes(term))) ||
+      (p.source?.config?.repo_name && p.source.config.repo_name.toLowerCase().includes(term)) ||
+      (p.source?.config?.owner && p.source.config.owner.toLowerCase().includes(term))
+    );
+  });
+
   const canProceedStep1 = useManual ? manualRepo.includes("/") : !!selectedRepo;
   const canProceedStep2 = !!formProjectName.trim();
 
@@ -389,7 +404,9 @@ export default function PagesPage() {
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl font-bold text-white truncate">Pages Projects</h1>
-          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{projects.length} project</p>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">
+            {projectSearch ? `${filteredProjects.length} dari ${projects.length} project` : `${projects.length} project`}
+          </p>
         </div>
         <div className="flex gap-1.5 shrink-0">
           <Button size="sm" variant="outline" onClick={() => fetchProjects()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 shrink-0 h-8 px-2 text-xs">
@@ -403,6 +420,28 @@ export default function PagesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Search Bar for Pages Projects */}
+      {projects.length > 0 && (
+        <div className="relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            placeholder="Cari project Pages berdasarkan nama, repo, domain..."
+            value={projectSearch}
+            onChange={(e) => setProjectSearch(e.target.value)}
+            className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-500 text-xs sm:text-sm pl-9 pr-8 h-9 rounded-lg focus-visible:ring-orange-500"
+          />
+          {projectSearch && (
+            <button
+              type="button"
+              onClick={() => setProjectSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
 
       <Card className="bg-gray-900 border-gray-800 overflow-hidden">
         <CardContent className="p-0">
@@ -424,9 +463,18 @@ export default function PagesPage() {
                 <PlusIcon className="w-4 h-4" /> Buat Project Baru
               </Button>
             </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="text-center py-10 px-4">
+              <Search className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+              <p className="text-gray-300 text-sm font-medium">Tidak ada project yang cocok</p>
+              <p className="text-xs text-gray-500 mt-1">Tidak ditemukan project dengan kata kunci "{projectSearch}"</p>
+              <Button size="sm" variant="ghost" onClick={() => setProjectSearch("")} className="mt-3 text-xs text-orange-400 hover:text-orange-300">
+                Reset Pencarian
+              </Button>
+            </div>
           ) : (
             <div className="divide-y divide-gray-800">
-              {projects.map((project) => {
+              {filteredProjects.map((project) => {
                 const latestStage = project.latest_deployment?.latest_stage;
                 const prodUrl = project.subdomain ? `https://${project.subdomain}.pages.dev` : null;
                 const repo = project.source?.config?.repo_name;
@@ -746,7 +794,7 @@ export default function PagesPage() {
       </Dialog>
 
       <Dialog open={!!domainProject} onOpenChange={(o) => !o && setDomainProject(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw]">
+        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
               <GlobeIcon className="w-3.5 h-3.5 text-orange-400" />
@@ -761,18 +809,12 @@ export default function PagesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="space-y-1">
                 <Label className="text-xs text-gray-300 font-medium">Domain Tersedia</Label>
-                <Select value={domainZoneId} onValueChange={setDomainZoneId}>
-                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white text-xs h-9">
-                    <SelectValue placeholder="Pilih domain..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    {zones.map((z) => (
-                      <SelectItem key={z.id} value={z.id} className="text-white hover:bg-gray-700 text-xs">
-                        {z.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ZoneSelect
+                  zones={zones}
+                  value={domainZoneId}
+                  onChange={setDomainZoneId}
+                  placeholder="Pilih domain..."
+                />
               </div>
 
               <div className="space-y-1">
