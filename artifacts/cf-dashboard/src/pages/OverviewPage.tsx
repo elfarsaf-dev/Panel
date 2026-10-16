@@ -49,7 +49,7 @@ export default function OverviewPage() {
   const inactiveZones = zones.filter((z) => z.status !== "active").length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5 max-w-full overflow-hidden">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-white">Overview</h1>
         <p className="text-gray-400 text-xs sm:text-sm mt-1">Ringkasan semua domain dan resource Cloudflare kamu</p>

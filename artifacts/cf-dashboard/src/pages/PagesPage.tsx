@@ -385,13 +385,13 @@ export default function PagesPage() {
   const canProceedStep2 = !!formProjectName.trim();
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-bold text-white">Pages Projects</h1>
-          <p className="text-gray-400 text-xs sm:text-sm mt-0.5">{projects.length} project</p>
+    <div className="space-y-4 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold text-white truncate">Pages Projects</h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{projects.length} project</p>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 shrink-0">
           <Button size="sm" variant="outline" onClick={() => fetchProjects()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 shrink-0 h-8 px-2 text-xs">
             <RefreshCwIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Refresh</span>
@@ -404,7 +404,7 @@ export default function PagesPage() {
         </div>
       </div>
 
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-gray-900 border-gray-800 overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-4 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 bg-gray-800 rounded-lg" />)}</div>
@@ -433,36 +433,38 @@ export default function PagesPage() {
                 const owner = project.source?.config?.owner;
                 return (
                   <div key={project.id} className="p-2.5 sm:p-4 hover:bg-gray-800/30 transition-colors">
-                    <div className="flex items-start gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <LayoutTemplateIcon className="w-3.5 h-3.5 text-orange-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[13px] sm:text-sm font-semibold text-white truncate max-w-[160px] sm:max-w-none">{project.name}</p>
-                          {latestStage && <DeployStatusBadge status={latestStage.status} />}
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <div className="flex items-start gap-2 min-w-0 flex-1">
+                        <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <LayoutTemplateIcon className="w-3.5 h-3.5 text-orange-400" />
                         </div>
-                        {prodUrl && (
-                          <a href={prodUrl} target="_blank" rel="noopener noreferrer"
-                            className="text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 w-fit truncate max-w-[180px] sm:max-w-[220px]">
-                            <ExternalLinkIcon className="w-2.5 h-2.5 shrink-0" />
-                            <span className="truncate">{project.subdomain}.pages.dev</span>
-                          </a>
-                        )}
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {repo && (
-                            <p className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1 truncate max-w-[150px] sm:max-w-none">
-                              <FolderGitIcon className="w-2.5 h-2.5 shrink-0" />{owner ? `${owner}/${repo}` : repo}
-                            </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-[13px] sm:text-sm font-semibold text-white truncate max-w-[130px] xs:max-w-[160px] sm:max-w-none">{project.name}</p>
+                            {latestStage && <DeployStatusBadge status={latestStage.status} />}
+                          </div>
+                          {prodUrl && (
+                            <a href={prodUrl} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-0.5 truncate max-w-[170px] xs:max-w-[220px] sm:max-w-none">
+                              <ExternalLinkIcon className="w-2.5 h-2.5 shrink-0" />
+                              <span className="truncate">{project.subdomain}.pages.dev</span>
+                            </a>
                           )}
-                          {project.domains?.length > 0 && (
-                            <p className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1">
-                              <GlobeIcon className="w-2.5 h-2.5" />{project.domains.length} custom domain
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {repo && (
+                              <p className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1 truncate max-w-[130px] xs:max-w-[160px] sm:max-w-none">
+                                <FolderGitIcon className="w-2.5 h-2.5 shrink-0" />{owner ? `${owner}/${repo}` : repo}
+                              </p>
+                            )}
+                            {project.domains?.length > 0 && (
+                              <p className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-1 shrink-0">
+                                <GlobeIcon className="w-2.5 h-2.5" />{project.domains.length} custom domain
+                              </p>
+                            )}
+                            <p className="text-[10px] sm:text-xs text-gray-600 flex items-center gap-1 shrink-0">
+                              <CalendarIcon className="w-2.5 h-2.5" />{formatDate(project.created_on)}
                             </p>
-                          )}
-                          <p className="text-[10px] sm:text-xs text-gray-600 flex items-center gap-1">
-                            <CalendarIcon className="w-2.5 h-2.5" />{formatDate(project.created_on)}
-                          </p>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">

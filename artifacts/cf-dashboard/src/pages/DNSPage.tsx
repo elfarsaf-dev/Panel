@@ -238,16 +238,16 @@ export default function DNSPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">DNS Records</h1>
-          <p className="text-gray-400 text-sm mt-1">{zoneName ? `${zoneName} — ${records.length} records` : "Pilih domain untuk melihat DNS records"}</p>
+    <div className="space-y-4 sm:space-y-6 max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-white truncate">DNS Records</h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{zoneName ? `${zoneName} — ${records.length} records` : "Pilih domain untuk melihat DNS records"}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <ZoneSelector value={zoneId} onChange={handleZoneChange} />
           {zoneId && (
-            <Button size="sm" onClick={() => setAddOpen(true)} className="bg-orange-500 hover:bg-orange-600 gap-1.5 text-sm">
+            <Button size="sm" onClick={() => setAddOpen(true)} className="bg-orange-500 hover:bg-orange-600 gap-1.5 text-xs sm:text-sm h-9">
               <PlusIcon className="w-4 h-4" /> Tambah
             </Button>
           )}
@@ -261,12 +261,12 @@ export default function DNSPage() {
             placeholder="Cari record..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
+            className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 h-9 text-sm"
           />
         </div>
       )}
 
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-gray-900 border-gray-800 overflow-hidden">
         <CardContent className="p-0">
           {!zoneId ? (
             <div className="text-center py-12">
@@ -278,53 +278,55 @@ export default function DNSPage() {
               {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full bg-gray-800" />)}
             </div>
           ) : (
-            <>
-              {/* Header */}
-              <div className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-gray-800 text-xs text-gray-500 font-medium">
-                <div className="col-span-2">Type</div>
-                <div className="col-span-3">Name</div>
-                <div className="col-span-4">Content</div>
-                <div className="col-span-1 text-center">Proxy</div>
-                <div className="col-span-1 text-right">TTL</div>
-                <div className="col-span-1"></div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[640px]">
+                {/* Header */}
+                <div className="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-gray-800 text-xs text-gray-500 font-medium">
+                  <div className="col-span-2">Type</div>
+                  <div className="col-span-3">Name</div>
+                  <div className="col-span-4">Content</div>
+                  <div className="col-span-1 text-center">Proxy</div>
+                  <div className="col-span-1 text-right">TTL</div>
+                  <div className="col-span-1"></div>
+                </div>
+                <div className="divide-y divide-gray-800/50">
+                  {filtered.map((record) => (
+                    <div key={record.id} className="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-800/30 transition-colors items-center group">
+                      <div className="col-span-2">
+                        <Badge className={cn("text-xs font-mono", TYPE_COLORS[record.type] ?? TYPE_COLORS.default)}>
+                          {record.type}
+                        </Badge>
+                      </div>
+                      <div className="col-span-3 text-sm text-white truncate font-mono" title={record.name}>{record.name}</div>
+                      <div className="col-span-4 text-sm text-gray-300 truncate font-mono" title={record.content}>{record.content}</div>
+                      <div className="col-span-1 text-center">
+                        {record.proxied ? (
+                          <span className="text-orange-400 text-xs">ON</span>
+                        ) : (
+                          <span className="text-gray-600 text-xs">OFF</span>
+                        )}
+                      </div>
+                      <div className="col-span-1 text-right text-xs text-gray-500">
+                        {record.ttl === 1 ? "Auto" : record.ttl}
+                      </div>
+                      <div className="col-span-1 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-white" onClick={() => setEditRecord(record)}>
+                          <PencilIcon className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-red-400 hover:bg-red-500/10" onClick={() => setDeleteRecord(record)}>
+                          <Trash2Icon className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {filtered.length === 0 && (
+                    <div className="text-center py-10">
+                      <p className="text-gray-500 text-sm">Tidak ada record ditemukan</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="divide-y divide-gray-800/50">
-                {filtered.map((record) => (
-                  <div key={record.id} className="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-800/30 transition-colors items-center group">
-                    <div className="col-span-2">
-                      <Badge className={cn("text-xs font-mono", TYPE_COLORS[record.type] ?? TYPE_COLORS.default)}>
-                        {record.type}
-                      </Badge>
-                    </div>
-                    <div className="col-span-3 text-sm text-white truncate font-mono" title={record.name}>{record.name}</div>
-                    <div className="col-span-4 text-sm text-gray-300 truncate font-mono" title={record.content}>{record.content}</div>
-                    <div className="col-span-1 text-center">
-                      {record.proxied ? (
-                        <span className="text-orange-400 text-xs">ON</span>
-                      ) : (
-                        <span className="text-gray-600 text-xs">OFF</span>
-                      )}
-                    </div>
-                    <div className="col-span-1 text-right text-xs text-gray-500">
-                      {record.ttl === 1 ? "Auto" : record.ttl}
-                    </div>
-                    <div className="col-span-1 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-white" onClick={() => setEditRecord(record)}>
-                        <PencilIcon className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-red-400 hover:bg-red-500/10" onClick={() => setDeleteRecord(record)}>
-                        <Trash2Icon className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {filtered.length === 0 && (
-                  <div className="text-center py-10">
-                    <p className="text-gray-500 text-sm">Tidak ada record ditemukan</p>
-                  </div>
-                )}
-              </div>
-            </>
+            </div>
           )}
         </CardContent>
       </Card>

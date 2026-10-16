@@ -101,19 +101,20 @@ export default function ZonesPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Domains / Zones</h1>
+    <div className="space-y-4 sm:space-y-5 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold text-white truncate">Domains / Zones</h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{zones.length} domain terdaftar</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-orange-500 hover:bg-orange-600 gap-2 h-8 px-2 sm:px-3">
-            <PlusCircleIcon className="w-4 h-4" />
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-orange-500 hover:bg-orange-600 gap-1.5 h-8 px-2 sm:px-3 text-xs">
+            <PlusCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Tambah Domain</span>
+            <span className="sm:hidden">Tambah</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={fetchZones} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2 shrink-0 h-8 px-2 sm:px-3">
-            <RefreshCwIcon className="w-4 h-4" />
+          <Button size="sm" variant="outline" onClick={fetchZones} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 shrink-0 h-8 px-2 sm:px-3 text-xs">
+            <RefreshCwIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
@@ -125,15 +126,15 @@ export default function ZonesPage() {
           placeholder="Cari domain..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
+          className="pl-10 bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 h-9 text-sm"
         />
       </div>
 
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-gray-900 border-gray-800 overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[72px] w-full bg-gray-800 rounded-lg" />)}
+            <div className="p-3 sm:p-4 space-y-2.5">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full bg-gray-800 rounded-lg" />)}
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12">
@@ -143,28 +144,30 @@ export default function ZonesPage() {
           ) : (
             <div className="divide-y divide-gray-800">
               {filtered.map((zone) => (
-                <div key={zone.id} className="p-3 sm:p-4 hover:bg-gray-800/30 transition-colors">
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className={cn(
-                      "w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0 flex items-center justify-center mt-0.5",
-                      zone.status === "active" && !zone.paused ? "bg-green-500/10" : "bg-gray-800"
-                    )}>
-                      <GlobeIcon className={cn("w-4 h-4", zone.status === "active" && !zone.paused ? "text-green-400" : "text-gray-500")} />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-white truncate max-w-[180px] sm:max-w-none">{zone.name}</p>
-                        <ZoneStatusBadge status={zone.status} paused={zone.paused} />
+                <div key={zone.id} className="p-2.5 sm:p-4 hover:bg-gray-800/30 transition-colors">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <div className={cn(
+                        "w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0 flex items-center justify-center",
+                        zone.status === "active" && !zone.paused ? "bg-green-500/10" : "bg-gray-800"
+                      )}>
+                        <GlobeIcon className={cn("w-4 h-4", zone.status === "active" && !zone.paused ? "text-green-400" : "text-gray-500")} />
                       </div>
-                      <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">{zone.plan?.name ?? "Free"} · {formatDate(zone.created_on)}</p>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-semibold text-white truncate max-w-[130px] xs:max-w-[180px] sm:max-w-none">{zone.name}</p>
+                          <ZoneStatusBadge status={zone.status} paused={zone.paused} />
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">{zone.plan?.name ?? "Free"} · {formatDate(zone.created_on)}</p>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 text-gray-400 hover:text-white"
+                        className="h-7 w-7 sm:h-8 sm:w-8 text-gray-400 hover:text-white"
                         onClick={() => setDetailZone(zone)}
                         title="Detail"
                       >
@@ -174,7 +177,7 @@ export default function ZonesPage() {
                         size="icon"
                         variant="ghost"
                         className={cn(
-                          "h-8 w-8",
+                          "h-7 w-7 sm:h-8 sm:w-8",
                           zone.paused
                             ? "text-green-400 hover:bg-green-500/10"
                             : "text-yellow-400 hover:bg-yellow-500/10"
@@ -193,7 +196,7 @@ export default function ZonesPage() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+                        className="h-7 w-7 sm:h-8 sm:w-8 text-gray-500 hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => setDeleteZone(zone)}
                         title="Hapus"
                       >

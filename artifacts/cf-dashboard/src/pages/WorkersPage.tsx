@@ -392,23 +392,26 @@ export default function WorkersPage() {
   const isEditAdd = dialogMode === "add" || dialogMode === "edit";
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Workers & Scripts</h1>
-          <p className="text-gray-400 text-sm mt-1">{workers.length} worker aktif</p>
+    <div className="space-y-4 sm:space-y-5 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold text-white truncate">Workers & Scripts</h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-0.5 truncate">{workers.length} worker aktif</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => fetchWorkers()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-2">
-            <RefreshCwIcon className="w-4 h-4" /> Refresh
+        <div className="flex gap-1.5 shrink-0">
+          <Button size="sm" variant="outline" onClick={() => fetchWorkers()} className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 h-8 px-2 sm:px-3 text-xs">
+            <RefreshCwIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button size="sm" onClick={openAdd} className="bg-orange-500 hover:bg-orange-600 gap-1.5">
-            <PlusIcon className="w-4 h-4" /> Worker Baru
+          <Button size="sm" onClick={openAdd} className="bg-orange-500 hover:bg-orange-600 gap-1.5 h-8 px-2 sm:px-3 text-xs">
+            <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Worker Baru</span>
+            <span className="sm:hidden">Baru</span>
           </Button>
         </div>
       </div>
 
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-gray-900 border-gray-800 overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-4 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 bg-gray-800" />)}</div>
@@ -423,15 +426,15 @@ export default function WorkersPage() {
               {workers.map((worker) => {
                 const name = worker.id ?? worker.script_name ?? "unknown";
                 return (
-                  <div key={worker.id} className="flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors group">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <div key={worker.id} className="flex items-center justify-between p-2.5 sm:p-4 hover:bg-gray-800/30 transition-colors group gap-2 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
                         <CodeIcon className="w-4 h-4 text-purple-400" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">{name}</p>
-                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                          <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">{name}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <p className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-1 shrink-0">
                             <ClockIcon className="w-3 h-3" />
                             {formatDate(worker.modified_on)}
                           </p>

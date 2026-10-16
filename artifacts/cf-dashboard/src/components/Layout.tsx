@@ -132,11 +132,11 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="p-3 sm:p-5 min-h-full">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full">
+          <div className="p-3 sm:p-5 min-h-full max-w-full w-full">
             {children}
           </div>
-        </ScrollArea>
+        </main>
       </div>
     </div>
   );
