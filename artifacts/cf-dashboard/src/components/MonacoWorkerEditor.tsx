@@ -17,12 +17,12 @@ import {
   Undo2,
   Redo2,
   Loader2,
-  Terminal,
   Cpu,
   ChevronLeft,
   ChevronRight,
   ArrowRightToLine,
   Keyboard,
+  ChevronDown,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -135,6 +135,7 @@ export default function MonacoWorkerEditor({
   const [viewportStyle, setViewportStyle] = useState<React.CSSProperties>({});
 
   const editorRef = useRef<monacoType.editor.IStandaloneCodeEditor | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Default to full-screen on mobile
   useEffect(() => {
@@ -143,7 +144,7 @@ export default function MonacoWorkerEditor({
     }
   }, [isMobile]);
 
-  // Visual Viewport API handler: handles virtual keyboard popups on mobile (like Termux)
+  // Visual Viewport API: handle virtual keyboard resizing on mobile smoothly
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -166,7 +167,7 @@ export default function MonacoWorkerEditor({
         if (editorRef.current) {
           editorRef.current.layout();
           const pos = editorRef.current.getPosition();
-          if (pos) {
+          if (pos && isKeyboardActive) {
             editorRef.current.revealPositionInCenter(pos, 0);
           }
         }
@@ -185,16 +186,86 @@ export default function MonacoWorkerEditor({
     };
   }, [isMobile, isFullscreen]);
 
+  // Acode-style Gesture Detection:
+  // If user touches and drags/scrolls: KEYBOARD NEVER OPENS.
+  // Only if user performs a stationary TAP on code: focus editor and show keyboard.
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container || !isMobile) return;
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+    let isDragging = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+        isDragging = false;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        // If movement exceeds 6px, it is definitely a scroll/swipe gesture!
+        if (dx > 6 || dy > 6) {
+          isDragging = true;
+          // Immediately blur any active textarea so keyboard stays hidden while scrolling
+          const activeEl = document.activeElement;
+          if (activeEl && (activeEl.tagName === "TEXTAREA" || activeEl.tagName === "INPUT")) {
+            (activeEl as HTMLElement).blur();
+          }
+        }
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const duration = Date.now() - startTime;
+      // Only when clean tap without dragging
+      if (!isDragging && duration < 350 && e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        if (editorRef.current) {
+          const editor = editorRef.current;
+          try {
+            const target = editor.getTargetAtClientPoint(touch.clientX, touch.clientY);
+            if (target && target.position) {
+              editor.setPosition(target.position);
+              editor.revealPositionInCenterIfOutsideViewport(target.position, 0);
+            }
+          } catch {
+            // fallback
+          }
+          // User deliberately tapped: now focus and open keyboard
+          editor.focus();
+        }
+      }
+    };
+
+    container.addEventListener("touchstart", onTouchStart, { passive: true, capture: true });
+    container.addEventListener("touchmove", onTouchMove, { passive: true, capture: true });
+    container.addEventListener("touchend", onTouchEnd, { passive: true, capture: true });
+
+    return () => {
+      container.removeEventListener("touchstart", onTouchStart, true);
+      container.removeEventListener("touchmove", onTouchMove, true);
+      container.removeEventListener("touchend", onTouchEnd, true);
+    };
+  }, [isMobile]);
+
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
-    // Track cursor position and keep typing cursor revealed in view
+    // Track cursor position
     editor.onDidChangeCursorPosition((e) => {
       setCursorPos({
         line: e.position.lineNumber,
         col: e.position.column,
       });
-      // Ensure cursor never gets pushed below keyboard
+      // Keep typing line visible above keyboard
       editor.revealPositionInCenterIfOutsideViewport(e.position, 0);
     });
 
@@ -253,6 +324,18 @@ export default function MonacoWorkerEditor({
       // Fallback
     }
   };
+
+  const dismissKeyboard = useCallback(() => {
+    if (editorRef.current) {
+      const dom = editorRef.current.getDomNode();
+      const input = dom?.querySelector("textarea.inputarea") as HTMLElement | null;
+      if (input) input.blur();
+    }
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setKeyboardHeight(0);
+  }, []);
 
   // Termux-style snippet insertion & cursor navigation
   const insertSnippet = useCallback((text: string) => {
@@ -521,8 +604,11 @@ export default function MonacoWorkerEditor({
         </div>
       )}
 
-      {/* Main Code Editor Area */}
-      <div className="relative flex-1 w-full h-full min-h-0 bg-[#12151b]">
+      {/* Main Code Editor Area (with Acode gesture interceptor) */}
+      <div
+        ref={editorContainerRef}
+        className="relative flex-1 w-full h-full min-h-0 bg-[#12151b] touch-pan-x touch-pan-y"
+      >
         {loading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#12151b] z-20 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
@@ -563,9 +649,21 @@ export default function MonacoWorkerEditor({
         )}
       </div>
 
-      {/* Termux-style Mobile Touch Action & Shortcut Toolbar (Stays directly above the keyboard!) */}
+      {/* Termux-style Mobile Touch Action & Shortcut Toolbar */}
       {!isViewOnly && (
         <div className="bg-[#141822] border-t border-gray-800 px-1.5 py-1 flex items-center gap-1 overflow-x-auto shrink-0 select-none shadow-md z-30">
+          {/* Dismiss Keyboard button (tap to hide keyboard & enjoy full screen scroll) */}
+          <button
+            type="button"
+            onClick={dismissKeyboard}
+            className="px-2 py-1 bg-[#1c2230] hover:bg-orange-500/20 active:bg-orange-500/40 text-gray-300 hover:text-white border border-gray-700/80 rounded text-[11px] font-mono shrink-0 flex items-center gap-1 shadow-xs"
+            title="Tutup Keyboard"
+          >
+            <Keyboard className="w-3.5 h-3.5 text-gray-400" />
+            <ChevronDown className="w-3 h-3 text-orange-400" />
+            <span className="hidden xs:inline">Tutup</span>
+          </button>
+
           {/* TAB Key button */}
           <button
             type="button"
@@ -694,7 +792,7 @@ export default function MonacoWorkerEditor({
         </div>
       )}
 
-      {/* VS Code Bottom Status Bar (floats directly above keyboard) */}
+      {/* VS Code Bottom Status Bar */}
       <div className="bg-[#0f1217] text-gray-400 border-t border-gray-800/80 px-2.5 sm:px-3 py-1 flex items-center justify-between text-[11px] font-mono shrink-0 select-none z-30">
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="flex items-center gap-1 text-orange-400">
