@@ -16,6 +16,7 @@ import {
   Loader2, ClockIcon, PencilIcon, GlobeIcon, LinkIcon, Route
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import MonacoWorkerEditor from "@/components/MonacoWorkerEditor";
 
 interface Worker {
   id: string;
@@ -139,6 +140,7 @@ export default function WorkersPage() {
   const openView = async (worker: Worker) => {
     const name = worker.id ?? worker.script_name ?? "";
     setSelectedWorker(worker);
+    setFormName(name);
     setFormScript("");
     setDialogMode("view");
     setFormLoading(true);
@@ -485,89 +487,23 @@ export default function WorkersPage() {
         </CardContent>
       </Card>
 
-      {/* Add / Edit dialog */}
-      <Dialog open={isEditAdd} onOpenChange={(o) => !o && setDialogMode(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl w-[95vw] max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CodeIcon className="w-4 h-4 text-purple-400" />
-              {dialogMode === "edit" ? `Edit Worker: ${formName}` : "Deploy Worker Baru"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-gray-300 text-xs">Nama Worker</Label>
-              <Input
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="my-worker"
-                disabled={dialogMode === "edit"}
-                className="bg-gray-800 border-gray-700 text-white font-mono disabled:opacity-60"
-              />
-              {dialogMode === "edit" && (
-                <p className="text-xs text-gray-500">Nama tidak bisa diubah saat edit. Deploy baru untuk nama berbeda.</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-gray-300 text-xs">Script (JavaScript / ES Module)</Label>
-              {formLoading ? (
-                <div className="flex items-center justify-center py-10 bg-gray-950 rounded-lg border border-gray-700">
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
-                  <span className="text-gray-400 text-sm">Memuat script...</span>
-                </div>
-              ) : (
-                <textarea
-                  value={formScript}
-                  onChange={(e) => setFormScript(e.target.value)}
-                  rows={14}
-                  className="w-full rounded-lg bg-gray-950 border border-gray-700 text-green-400 font-mono text-xs p-3 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-y"
-                />
-              )}
-            </div>
-          </div>
-          <DialogFooter className="gap-2 pt-2 flex-col sm:flex-row">
-            <Button variant="ghost" onClick={() => setDialogMode(null)} className="text-gray-400 w-full sm:w-auto">Batal</Button>
-            <Button
-              onClick={saveWorker}
-              disabled={saving || !formName.trim() || formLoading}
-              className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto"
-            >
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {dialogMode === "edit" ? "Simpan Perubahan" : "Deploy"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* View script dialog */}
-      <Dialog open={dialogMode === "view"} onOpenChange={(o) => !o && setDialogMode(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl w-[95vw] max-h-[85vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CodeIcon className="w-4 h-4 text-purple-400" />
-              {selectedWorker?.id ?? selectedWorker?.script_name}
-            </DialogTitle>
-          </DialogHeader>
-          {formLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            </div>
-          ) : (
-            <pre className="text-xs text-green-400 bg-gray-950 rounded-lg p-4 overflow-auto font-mono leading-relaxed whitespace-pre-wrap">
-              {formScript}
-            </pre>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => selectedWorker && openEdit(selectedWorker)}
-              className="border-orange-500/40 text-orange-400 hover:bg-orange-500/10 gap-2"
-            >
-              <PencilIcon className="w-4 h-4" /> Edit Script Ini
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* VS Code Monaco Worker Editor Modal / Fullscreen Zen Mode */}
+      {dialogMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4">
+          <MonacoWorkerEditor
+            value={formScript}
+            onChange={setFormScript}
+            workerName={formName}
+            onWorkerNameChange={setFormName}
+            isNameDisabled={dialogMode === "edit" || dialogMode === "view"}
+            dialogMode={dialogMode}
+            saving={saving}
+            onSave={saveWorker}
+            onClose={() => setDialogMode(null)}
+            loading={formLoading}
+          />
+        </div>
+      )}
 
       {/* Custom Domain & Routes Manager */}
       <Dialog open={!!domainWorker} onOpenChange={(o) => !o && setDomainWorker(null)}>
