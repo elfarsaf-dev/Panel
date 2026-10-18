@@ -27,6 +27,9 @@ import {
   Search,
   CopyCheck,
   Files,
+  Zap,
+  ClipboardPaste,
+  Trash2,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -131,6 +134,63 @@ export default function MonacoWorkerEditor({
   loading = false,
 }: MonacoWorkerEditorProps) {
   const isMobile = useIsMobile();
+  const [editorMode, setEditorMode] = useState<"monaco" | "simple">(() => {
+    const saved = localStorage.getItem("cf_editor_mode");
+    if (saved === "monaco" || saved === "simple") return saved;
+    return isMobile ? "simple" : "monaco";
+  });
+
+  const handleModeChange = (mode: "monaco" | "simple") => {
+    setEditorMode(mode);
+    localStorage.setItem("cf_editor_mode", mode);
+  };
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const handleTextareaSelect = useCallback(() => {
+    if (!textareaRef.current) return;
+    const pos = textareaRef.current.selectionStart ?? 0;
+    const lines = value.substring(0, pos).split("\n");
+    setCursorPos({
+      line: lines.length,
+      col: lines[lines.length - 1].length + 1,
+    });
+  }, [value]);
+
+  const handleSimplePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      if (textareaRef.current) {
+        const ta = textareaRef.current;
+        const start = ta.selectionStart ?? 0;
+        const end = ta.selectionEnd ?? 0;
+        const nextVal = value.substring(0, start) + text + value.substring(end);
+        onChange(nextVal);
+        setTimeout(() => {
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = start + text.length;
+          handleTextareaSelect();
+        }, 10);
+      } else {
+        onChange(text);
+      }
+    } catch {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }
+  };
+
+  const handleSimpleClear = () => {
+    if (window.confirm("Kosongkan semua teks kode di editor?")) {
+      onChange("");
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }
+  };
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
@@ -303,20 +363,26 @@ export default function MonacoWorkerEditor({
   };
 
   const handleFormatCode = () => {
-    if (editorRef.current) {
+    if (editorMode === "monaco" && editorRef.current) {
       editorRef.current.getAction("editor.action.formatDocument")?.run();
     }
   };
 
   const handleUndo = () => {
-    if (editorRef.current) {
+    if (editorMode === "monaco" && editorRef.current) {
       editorRef.current.trigger("keyboard", "undo", null);
+    } else if (editorMode === "simple") {
+      document.execCommand("undo");
+      handleTextareaSelect();
     }
   };
 
   const handleRedo = () => {
-    if (editorRef.current) {
+    if (editorMode === "monaco" && editorRef.current) {
       editorRef.current.trigger("keyboard", "redo", null);
+    } else if (editorMode === "simple") {
+      document.execCommand("redo");
+      handleTextareaSelect();
     }
   };
 
@@ -331,6 +397,9 @@ export default function MonacoWorkerEditor({
   };
 
   const dismissKeyboard = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.blur();
+    }
     if (editorRef.current) {
       const dom = editorRef.current.getDomNode();
       const input = dom?.querySelector("textarea.inputarea") as HTMLElement | null;
@@ -346,6 +415,46 @@ export default function MonacoWorkerEditor({
   // Handle Termux CTRL actions
   const handleCtrlAction = useCallback(
     (action: "find" | "comment" | "selectAll" | "save" | "duplicate" | "format" | "undo" | "redo") => {
+      if (editorMode === "simple") {
+        const ta = textareaRef.current;
+        switch (action) {
+          case "selectAll":
+            if (ta) ta.select();
+            break;
+          case "save":
+            onSave();
+            break;
+          case "undo":
+            document.execCommand("undo");
+            handleTextareaSelect();
+            break;
+          case "redo":
+            document.execCommand("redo");
+            handleTextareaSelect();
+            break;
+          case "duplicate":
+            if (ta) {
+              const start = ta.selectionStart ?? 0;
+              const lines = value.split("\n");
+              let charCount = 0;
+              let lineIdx = 0;
+              for (let i = 0; i < lines.length; i++) {
+                if (charCount + lines[i].length >= start) {
+                  lineIdx = i;
+                  break;
+                }
+                charCount += lines[i].length + 1;
+              }
+              const lineToDup = lines[lineIdx];
+              lines.splice(lineIdx + 1, 0, lineToDup);
+              onChange(lines.join("\n"));
+            }
+            break;
+        }
+        setIsCtrlActive(false);
+        return;
+      }
+
       if (!editorRef.current) return;
       const editor = editorRef.current;
       switch (action) {
@@ -387,13 +496,14 @@ export default function MonacoWorkerEditor({
       }
       setIsCtrlActive(false);
     },
-    [onSave]
+    [editorMode, onSave, value, onChange, handleTextareaSelect]
   );
 
   const handleEsc = useCallback(() => {
-    if (!editorRef.current) return;
-    editorRef.current.trigger("keyboard", "closeFindWidget", null);
-    editorRef.current.trigger("keyboard", "hideSuggestWidget", null);
+    if (editorRef.current) {
+      editorRef.current.trigger("keyboard", "closeFindWidget", null);
+      editorRef.current.trigger("keyboard", "hideSuggestWidget", null);
+    }
     setIsCtrlActive(false);
   }, []);
 
@@ -434,6 +544,20 @@ export default function MonacoWorkerEditor({
 
   // Termux-style snippet insertion & cursor navigation
   const insertSnippet = useCallback((text: string) => {
+    if (editorMode === "simple" && textareaRef.current) {
+      const ta = textareaRef.current;
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? 0;
+      const nextVal = value.substring(0, start) + text + value.substring(end);
+      onChange(nextVal);
+      setTimeout(() => {
+        ta.focus();
+        ta.selectionStart = ta.selectionEnd = start + text.length;
+        handleTextareaSelect();
+      }, 0);
+      return;
+    }
+
     if (!editorRef.current) return;
     const editor = editorRef.current;
     const sel = editor.getSelection();
@@ -447,9 +571,25 @@ export default function MonacoWorkerEditor({
       ]);
       editor.focus();
     }
-  }, []);
+  }, [editorMode, value, onChange, handleTextareaSelect]);
 
   const insertPair = useCallback((open: string, close: string) => {
+    if (editorMode === "simple" && textareaRef.current) {
+      const ta = textareaRef.current;
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? 0;
+      const selectedText = value.substring(start, end);
+      const text = `${open}${selectedText}${close}`;
+      const nextVal = value.substring(0, start) + text + value.substring(end);
+      onChange(nextVal);
+      setTimeout(() => {
+        ta.focus();
+        ta.selectionStart = ta.selectionEnd = start + open.length;
+        handleTextareaSelect();
+      }, 0);
+      return;
+    }
+
     if (!editorRef.current) return;
     const editor = editorRef.current;
     const sel = editor.getSelection();
@@ -471,9 +611,18 @@ export default function MonacoWorkerEditor({
       });
       editor.focus();
     }
-  }, []);
+  }, [editorMode, value, onChange, handleTextareaSelect]);
 
   const moveCursor = useCallback((direction: -1 | 1) => {
+    if (editorMode === "simple" && textareaRef.current) {
+      const ta = textareaRef.current;
+      const newPos = Math.max(0, Math.min(value.length, (ta.selectionStart ?? 0) + direction));
+      ta.selectionStart = ta.selectionEnd = newPos;
+      ta.focus();
+      handleTextareaSelect();
+      return;
+    }
+
     if (!editorRef.current) return;
     const editor = editorRef.current;
     const pos = editor.getPosition();
@@ -502,9 +651,36 @@ export default function MonacoWorkerEditor({
     editor.setPosition(newPos);
     editor.revealPositionInCenterIfOutsideViewport(newPos, 0);
     editor.focus();
-  }, []);
+  }, [editorMode, value, handleTextareaSelect]);
 
   const moveCursorVertical = useCallback((direction: -1 | 1) => {
+    if (editorMode === "simple" && textareaRef.current) {
+      const ta = textareaRef.current;
+      const currentPos = ta.selectionStart ?? 0;
+      const lines = value.split("\n");
+      let charCount = 0;
+      let currentLineIdx = 0;
+      let colIdx = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (charCount + lines[i].length >= currentPos) {
+          currentLineIdx = i;
+          colIdx = currentPos - charCount;
+          break;
+        }
+        charCount += lines[i].length + 1;
+      }
+      const targetLineIdx = Math.max(0, Math.min(lines.length - 1, currentLineIdx + direction));
+      let targetCharCount = 0;
+      for (let i = 0; i < targetLineIdx; i++) {
+        targetCharCount += lines[i].length + 1;
+      }
+      const targetPos = targetCharCount + Math.min(colIdx, lines[targetLineIdx].length);
+      ta.selectionStart = ta.selectionEnd = targetPos;
+      ta.focus();
+      handleTextareaSelect();
+      return;
+    }
+
     if (!editorRef.current) return;
     const editor = editorRef.current;
     const pos = editor.getPosition();
@@ -519,7 +695,7 @@ export default function MonacoWorkerEditor({
     editor.setPosition(newPos);
     editor.revealPositionInCenterIfOutsideViewport(newPos, 0);
     editor.focus();
-  }, []);
+  }, [editorMode, value, handleTextareaSelect]);
 
   const isModule =
     value.includes("export default") ||
@@ -574,7 +750,37 @@ export default function MonacoWorkerEditor({
         </div>
 
         {/* Center/Right Toolbar */}
-        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Mode Switcher: Ringan vs Monaco */}
+          <div className="flex items-center bg-[#10141d] p-0.5 rounded-md border border-gray-700/80">
+            <button
+              type="button"
+              onClick={() => handleModeChange("simple")}
+              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-[11px] font-mono transition-all flex items-center gap-1 ${
+                editorMode === "simple"
+                  ? "bg-orange-500 text-white font-bold shadow-xs"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+              }`}
+              title="Mode Ringan: Textarea biasa, anti-lag & cepat saat paste di HP"
+            >
+              <Zap className="w-3 h-3 text-yellow-300 shrink-0" />
+              <span>Ringan</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange("monaco")}
+              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-[11px] font-mono transition-all flex items-center gap-1 ${
+                editorMode === "monaco"
+                  ? "bg-orange-500 text-white font-bold shadow-xs"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+              }`}
+              title="Mode Monaco: VS Code Editor lengkap dengan syntax highlight"
+            >
+              <Code2 className="w-3 h-3 text-blue-300 shrink-0" />
+              <span>Monaco</span>
+            </button>
+          </div>
+
           {/* Templates button */}
           {!isViewOnly && (
             <div className="relative">
@@ -725,6 +931,70 @@ export default function MonacoWorkerEditor({
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#12151b] z-20 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
             <p className="text-gray-400 text-xs font-mono">Memuat kode Cloudflare Worker...</p>
+          </div>
+        ) : editorMode === "simple" ? (
+          <div className="relative flex flex-col w-full h-full min-h-0 bg-[#12151b]">
+            {/* Simple mode quick action bar */}
+            <div className="bg-[#161a23] border-b border-gray-800/80 px-2.5 sm:px-3 py-1.5 flex items-center justify-between text-xs shrink-0 gap-2 select-none">
+              <div className="flex items-center gap-1.5 text-orange-400 font-mono text-[11px] truncate">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="font-semibold text-white">Mode Ringan</span>
+                <span className="text-gray-400 text-[10px] hidden xs:inline">(Form Biasa: Anti-Lag & Instan Paste)</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {!isViewOnly && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSimplePaste}
+                    className="h-6 px-2 text-[11px] bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 gap-1 rounded font-mono"
+                    title="Tempel isi clipboard langsung"
+                  >
+                    <ClipboardPaste className="w-3 h-3 text-orange-400" />
+                    <span>Tempel</span>
+                  </Button>
+                )}
+                {!isViewOnly && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSimpleClear}
+                    className="h-6 px-2 text-[11px] text-gray-400 hover:text-red-400 hover:bg-red-500/10 gap-1 rounded font-mono"
+                    title="Bersihkan isi editor"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span className="hidden sm:inline">Bersihkan</span>
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleModeChange("monaco")}
+                  className="h-6 px-2 text-[11px] text-blue-300 hover:bg-blue-500/20 gap-1 rounded font-mono"
+                  title="Ganti ke Monaco VS Code"
+                >
+                  <Code2 className="w-3 h-3 text-blue-400" />
+                  <span className="hidden sm:inline">Ke Monaco</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Simple Textarea (Anti-Lag, Instant Paste) */}
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onSelect={handleTextareaSelect}
+              onKeyUp={handleTextareaSelect}
+              onClick={handleTextareaSelect}
+              readOnly={isViewOnly}
+              placeholder={`// Mode Ringan (Anti-Lag di HP)\n// Tempel (Paste) atau tulis script Cloudflare Worker di sini.\n// Sangat ringan dan instan saat paste puluhan ribu baris kode.`}
+              spellCheck={false}
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              className="flex-1 w-full h-full min-h-0 bg-[#12151b] text-gray-100 p-3 sm:p-4 font-mono text-xs sm:text-sm leading-relaxed border-none outline-none focus:outline-none focus:ring-0 resize-none selection:bg-orange-500/30 overflow-y-auto"
+            />
           </div>
         ) : (
           <Editor
@@ -1041,7 +1311,10 @@ export default function MonacoWorkerEditor({
 
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-gray-400 hidden xs:inline">UTF-8</span>
-          <span className="text-gray-400">Spasi: 2</span>
+          <span className="text-orange-400/90 font-medium">
+            {editorMode === "simple" ? "⚡ Mode Ringan" : "💻 Mode Monaco"}
+          </span>
+          <span className="text-gray-400 hidden xs:inline">Spasi: 2</span>
           {keyboardHeight > 0 && (
             <span className="text-orange-400 flex items-center gap-1 text-[10px]">
               <Keyboard className="w-3 h-3" /> Keyboard Aktif
